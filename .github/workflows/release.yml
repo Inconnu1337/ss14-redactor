@@ -30,9 +30,6 @@ jobs:
           - rid: linux-x64
             os: ubuntu-latest
             archive: tar
-          - rid: osx-x64
-            os: macos-13
-            archive: tar
           - rid: osx-arm64
             os: macos-latest
             archive: tar
