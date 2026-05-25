@@ -77,6 +77,30 @@ function buildAddProtoFooter() {
     return footer;
 }
 
+// Eye-icon collapse/expand toggle. The button visually swaps icon via the
+// `.collapsed` class on its nearest ancestor card (proto-card or
+// component-card). Hover-only visibility is handled in CSS.
+function buildCollapseBtn(getCard) {
+    const btn = _el('button');
+    btn.className = 'collapse-btn';
+    btn.type = 'button';
+    btn.title = 'Show only overridden fields';
+    btn.setAttribute('aria-label', 'Toggle field visibility');
+    btn.innerHTML = `
+        <svg class="icon-open" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="icon-closed" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const card = getCard();
+        if (!card) return;
+        card.classList.toggle('collapsed');
+        btn.title = card.classList.contains('collapsed')
+            ? 'Show all fields'
+            : 'Show only overridden fields';
+    });
+    return btn;
+}
+
 function showAddProtoModal() {
     const overlay = _div('modal-overlay');
     const modal = _div('modal');
@@ -272,7 +296,10 @@ function addNewPrototype(type) {
 
 // ======================== PROTO CARD ===================================
 function buildCard(proto, idx) {
-    const card = _div('proto-card');
+    // Default to collapsed: only overridden (.field-local) rows are visible
+    // out of the box; expand reveals every field. Per-card collapse state
+    // is preserved across re-renders by save/restoreCollapseState.
+    const card = _div('proto-card collapsed');
     const type = proto.type || 'unknown';
     const id   = proto.id   || '(no id)';
     const meta = state.metadata?.prototypes?.[type];
@@ -302,7 +329,6 @@ function buildCard(proto, idx) {
                 <span class="proto-id-text" title="Double-click to rename ID">${esc(String(id))}</span>
             </div>
         </div>`;
-
     // Abstract row — only rendered for proto types whose metadata actually
     // declares an abstract field. Built via the standard bool fieldRow so
     // spacing and styling match every other bool field in the editor.
@@ -343,20 +369,17 @@ function buildCard(proto, idx) {
             renderEditor();
         }
     });
-    // Click on the type line (only) toggles collapse. id/abstract/parent
-    // sub-rows are NOT collapse-triggers because the user must be able to
-    // edit them without folding the whole card.
-    hdr.querySelector('.proto-type-line').addEventListener('click', e => {
-        if (e.target.closest('a, button, input, label')) return;
-        card.classList.toggle('collapsed');
-    });
+    // Eye-icon collapse toggle, inserted just before the × delete button so
+    // it sits glued next to the type name (never floated to the right edge).
+    const protoTypeLine = hdr.querySelector('.proto-type-line');
+    const protoDeleteBtn = protoTypeLine.querySelector('.delete-proto-btn');
+    protoTypeLine.insertBefore(buildCollapseBtn(() => card), protoDeleteBtn);
     hdr.addEventListener('contextmenu', e => {
         e.preventDefault(); e.stopPropagation();
         const items = [
             { label: 'Rename ID…', action: () => startIdRename(idSpan, proto, idx) },
             { label: 'Collapse / Expand', action: () => hdr.querySelector('.collapse-btn').click() },
-        ];
-        if (meta?.className) items.push({ label: 'Open .cs source', action: () => api.openSource(meta.className) });
+        ];        if (meta?.className) items.push({ label: 'Open .cs source', action: () => api.openSource(meta.className) });
         items.push('---', { label: 'Delete prototype', danger: true, action: () => hdr.querySelector('.delete-proto-btn').click() });
         showContextMenu(e.clientX, e.clientY, items);
     });
@@ -451,7 +474,7 @@ function buildCard(proto, idx) {
             if (f.tag === 'components') { renderedTags.add('components'); continue; }
             renderedTags.add(f.tag);
 
-            const { value, source } = getFieldValue(proto, f.tag, inherited, undefined);
+            const { value, source } = getFieldValue(proto, f.tag, inherited, f.default);
 
             const onReset = source === 'local' ? () => deleteField([idx], f.tag) : null;
             body.appendChild(fieldRow(f.tag, f, value, source, v => setFieldValue([idx], f.tag, v), onReset));
@@ -674,11 +697,9 @@ function localizeComponent(protoIdx, compType) {
 }
 
 function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
-    // Collapsed by default ONLY for inherited components that haven't been
-    // overridden in this prototype. Local components (= the user explicitly
-    // wrote them in this YAML, or they carry overrides on top of an inherited
-    // base) start expanded so the changes are immediately visible.
-    const startCollapsed = isInh;
+    // Default to collapsed for every component (inherited or local). Only
+    // overridden field rows show until the user expands via the eye icon.
+    const startCollapsed = true;
     // A local component that ALSO exists in the inherited chain is an
     // override – the `×` action effectively *resets* it to the inherited
     // value rather than truly deleting it. Surface that distinction in
@@ -692,7 +713,7 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
     hdr.innerHTML = `<span class="component-type" title="${esc(cMeta?.summary || '')}">${esc(compType)}</span>`;
     if (!isInh && compIdx >= 0) {
         const rmBtn = _el('button');
-        rmBtn.className = 'field-reset-btn';
+        rmBtn.className = 'field-reset-btn comp-remove-btn';
         if (isOverride) {
             rmBtn.title = 'Reset to inherited value';
             rmBtn.textContent = '↺';
@@ -710,10 +731,8 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
         });
         hdr.appendChild(rmBtn);
     }
-    hdr.addEventListener('click', e => {
-        if (e.target.closest('button')) return;
-        card.classList.toggle('collapsed');
-    });
+    // Eye-icon collapse toggle, after the component name/remove button.
+    hdr.appendChild(buildCollapseBtn(() => card));
     hdr.addEventListener('contextmenu', e => {
         e.preventDefault(); e.stopPropagation();
         const items = [];
@@ -775,7 +794,7 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
                 value = inhCompData[f.tag];
             } else {
                 source = 'default';
-                value = undefined;
+                value = f.default;
             }
 
             const onReset = (!isInh && source === 'local') ? () => compOnReset(f.tag) : null;

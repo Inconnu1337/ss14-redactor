@@ -322,7 +322,15 @@ function mapCtrl(val, meta, dis, onChange) {
 // ======================== DATADEFINITION EDITOR =========================
 function dataDefCtrl(val, ddType, dis, onChange) {
     const obj = (val && typeof val === 'object') ? { ...val } : {};
-    const w = _div('field-control datadef-inline');
+    // Nested objects start collapsed by the same rules as proto/component
+    // cards: only overridden sub-fields show until the user clicks the eye.
+    const w = _div('field-control datadef-inline collapsed');
+
+    // Header carries the optional polymorphic type-selector AND the
+    // eye-icon collapse toggle. It is always rendered so the eye has a
+    // home even on schemaless / parameterless data definitions.
+    const hdr = _div('datadef-header');
+    w.appendChild(hdr);
 
     // ── Polymorphic resolution ───────────────────────────────────────
     // If the value carries an explicit `!type:` tag (preserved as
@@ -397,8 +405,15 @@ function dataDefCtrl(val, ddType, dis, onChange) {
             }, true);
         });
         row.appendChild(btn);
-        w.appendChild(row);
+        hdr.appendChild(row);
     }
+
+    // Eye-icon collapse button — always last in the header so it lines up
+    // visually with the proto/component eye buttons.
+    hdr.appendChild(buildCollapseBtn(() => w));
+
+    const body = _div('datadef-body');
+    w.appendChild(body);
 
     if (!ddMeta || !ddMeta.fields || ddMeta.fields.length === 0) {
         // No fields known – at least keep the type-tag selector above and
@@ -417,11 +432,12 @@ function dataDefCtrl(val, ddType, dis, onChange) {
         if (f.isId || f.isParent || f.isAbstract) continue;
         const v = obj[f.tag];
         const src = v !== undefined ? 'local' : 'default';
+        const effective = v !== undefined ? v : f.default;
         // Each declared field gets the standard override/reset codepath:
         // an explicit value flips `src` to 'local' (which renders the
         // override bar + reset button), and the reset handler deletes the
         // key from the object so it falls back to the field default.
-        w.appendChild(fieldRow(f.tag, f, v, src, nv => {
+        body.appendChild(fieldRow(f.tag, f, effective, src, nv => {
             obj[f.tag] = nv; onChange({ ...obj });
         }, () => {
             delete obj[f.tag]; onChange({ ...obj });
@@ -430,7 +446,7 @@ function dataDefCtrl(val, ddType, dis, onChange) {
     for (const [k, v] of Object.entries(obj)) {
         if (k.startsWith('__')) continue;
         if (ddMeta.fields.some(f => f.tag === k)) continue;
-        w.appendChild(genericRow(k, v, 'local', nv => { obj[k] = nv; onChange({ ...obj }); }, () => {
+        body.appendChild(genericRow(k, v, 'local', nv => { obj[k] = nv; onChange({ ...obj }); }, () => {
             delete obj[k]; onChange({ ...obj });
         }));
     }

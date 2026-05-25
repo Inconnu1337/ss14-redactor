@@ -59,6 +59,20 @@ public sealed class FieldMetadata
     public string? ProtoTypeArg { get; set; }
     public string[]? EnumValues { get; set; }
 
+    // Schema-level default extracted from the C# field/property initializer
+    // by scanning constructor IL. When <see cref="HasDefault"/> is false the
+    // default is genuinely unknown and the WebUI keeps its '(unknown default)'
+    // placeholder. When HasDefault is true, the Default value is meaningful
+    // — including JSON null for fields explicitly initialised to null. The
+    // boxed value is a JSON-friendly primitive (bool, long, double, string);
+    // enums become the member name as a string, ProtoId/EntProtoId/LocId
+    // wrappers become the inner string literal.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool HasDefault { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Default { get; set; }
+
     // Recursive type tree for collection elements / dict key+value.
     // Mirrors the same shape as a field's classification and recurses
     // through any depth of List/Array/Dictionary nesting, so the editor

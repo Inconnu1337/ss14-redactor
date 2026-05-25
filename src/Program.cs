@@ -29,6 +29,17 @@ public static class Program
                 MetadataExtractor.Extract(extractRoot);
                 break;
 
+            case "scandefaults":
+            {
+                if (args.Length < 3) { Console.Error.WriteLine("Usage: scandefaults <dll> <TypeFullName>"); return; }
+                var sc = new CtorDefaultsScanner();
+                sc.ScanAssembly(args[1]);
+                var m = sc.GetDefaultsFor(args[2]);
+                if (m == null) { Console.WriteLine($"(no entry for {args[2]}; {sc.TypesWithDefaults} types had defaults)"); return; }
+                foreach (var kv in m) Console.WriteLine($"  {kv.Key} = {kv.Value ?? "null"} ({kv.Value?.GetType().Name ?? "<null>"})");
+                return;
+            }
+
             case "serve":
                 var serveRoot = args.Length > 1 ? args[1] : FindSolutionRoot();
                 // serveRoot == null is intentional: the server starts in "setup mode"

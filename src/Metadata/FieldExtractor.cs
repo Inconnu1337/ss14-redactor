@@ -11,13 +11,79 @@ namespace Content.Redactor.Redactor;
 /// </summary>
 public sealed class FieldExtractor
 {
+    /// <summary>
+    /// Fully-qualified type names whose fields the editor never displays —
+    /// they refer to runtime engine state (entity handles, network ids)
+    /// that is populated by systems at simulation time and is never set
+    /// from prototypes. Add new entries here when an extra runtime-only
+    /// type starts leaking into the metadata.
+    /// </summary>
+    private static readonly HashSet<string> RuntimeOnlyTypeNames = new(StringComparer.Ordinal)
+    {
+        "Robust.Shared.GameObjects.EntityUid",
+        "Robust.Shared.GameObjects.NetEntity",
+        "Robust.Shared.GameObjects.EntityCoordinates",
+        "Robust.Shared.GameObjects.NetCoordinates",
+        "Robust.Shared.Map.MapCoordinates",
+        "Robust.Shared.Map.MapId",
+        "Robust.Shared.Map.GridId",
+        "Robust.Shared.Map.EntityCoordinates",
+        "Robust.Shared.Map.MapGridComponent",
+        "Robust.Shared.Player.ICommonSession",
+        "Robust.Shared.Network.NetUserId",
+    };
+
+    /// <summary>
+    /// True when <paramref name="type"/> (or its inner Nullable&lt;T&gt;) is
+    /// a runtime-only handle that should never appear in the prototype
+    /// editor. Collections of runtime-only types are also skipped so the
+    /// editor doesn't render an empty editable list of EntityUids.
+    /// </summary>
+    private static bool IsRuntimeOnlyType(Type type)
+    {
+        var t = type;
+        if (t.Name == "Nullable`1" && t.IsGenericType)
+        {
+            try { var inner = t.GetGenericArguments(); if (inner.Length > 0) t = inner[0]; }
+            catch { /* keep t */ }
+        }
+        var full = t.FullName ?? t.Name;
+        if (RuntimeOnlyTypeNames.Contains(full)) return true;
+
+        // Generic single-arg collections (List<T>, HashSet<T>, IReadOnlyList<T>, etc.)
+        // and the two-arg dictionary case — recurse into each type argument.
+        if (t.IsGenericType)
+        {
+            try
+            {
+                foreach (var arg in t.GetGenericArguments())
+                    if (IsRuntimeOnlyType(arg)) return true;
+            }
+            catch { /* fall through */ }
+        }
+        // Arrays / arrays-of-arrays.
+        if (t.IsArray)
+        {
+            try { var e = t.GetElementType(); if (e != null && IsRuntimeOnlyType(e)) return true; }
+            catch { /* keep going */ }
+        }
+        return false;
+    }
+
     private readonly XmlDocReader _xmlDocs;
     private readonly Dictionary<string, DataDefinitionMetadata> _dataDefinitions;
+    private readonly CtorDefaultsScanner? _defaultsScanner;
 
     public FieldExtractor(XmlDocReader xmlDocs, Dictionary<string, DataDefinitionMetadata> dataDefinitions)
+        : this(xmlDocs, dataDefinitions, null) { }
+
+    public FieldExtractor(XmlDocReader xmlDocs,
+        Dictionary<string, DataDefinitionMetadata> dataDefinitions,
+        CtorDefaultsScanner? defaultsScanner)
     {
         _xmlDocs = xmlDocs;
         _dataDefinitions = dataDefinitions;
+        _defaultsScanner = defaultsScanner;
     }
 
     public List<FieldMetadata> ExtractDataFields(Type type)
@@ -120,6 +186,12 @@ public sealed class FieldExtractor
         if (memberType == null)
             return null;
 
+        // Hide runtime-only handles (EntityUid, NetEntity, and collections
+        // of them). Prototypes never populate these — they're set by game
+        // systems at simulation time.
+        if (IsRuntimeOnlyType(memberType))
+            return null;
+
         var tag = ResolveTag(dfAttr, member.Name, isId, isParent, isAbstract);
         var required = ResolveRequired(dfAttr);
         var (fieldKind, enumValues, protoTypeArg) = ClassifyType(memberType);
@@ -143,7 +215,167 @@ public sealed class FieldExtractor
         };
 
         EnrichFieldTypeInfo(meta, memberType);
+
+        // Schema default (from C# field initializer IL). Looked up against
+        // the declaring type so a base class's defaults aren't shadowed by a
+        // derived class that happens to share a field name.
+        if (_defaultsScanner != null)
+        {
+            var declaring = member.DeclaringType?.FullName;
+            if (!string.IsNullOrEmpty(declaring))
+            {
+                var map = _defaultsScanner.GetDefaultsFor(declaring!);
+                if (map != null && map.TryGetValue(member.Name, out var def))
+                {
+                    var mapped = MapDefaultToFieldType(def, memberType);
+                    // Distinguish "no entry" from "entry with null/unmappable
+                    // value" so the UI can show '(unknown default)' only when
+                    // we really don't know. NaN/Infinity flow through
+                    // MapDefaultToFieldType as null and stay HasDefault=false.
+                    if (mapped != null)
+                    {
+                        meta.Default = mapped;
+                        meta.HasDefault = true;
+                    }
+                    else if (def == null)
+                    {
+                        // Explicit `= null` initializer.
+                        meta.Default = null;
+                        meta.HasDefault = true;
+                    }
+                }
+            }
+        }
+
+        // Fallbacks for cases where Roslyn omits the stfld because the
+        // declared initializer matches the runtime default for that type.
+        // Surfacing these explicitly stops the editor from rendering
+        // '(unknown)' for every unset boolean / nullable / collection
+        // field — by far the common case in SS14 prototypes.
+        if (!meta.HasDefault)
+        {
+            var t = memberType;
+            var isNullable = t.Name == "Nullable`1" && t.IsGenericType;
+            if (isNullable)
+            {
+                var inner = t.GetGenericArguments();
+                if (inner.Length > 0) t = inner[0];
+            }
+
+            if (isNullable)
+            {
+                meta.Default = null;
+                meta.HasDefault = true;
+            }
+            else if (t.Name == "Boolean")
+            {
+                meta.Default = false;
+                meta.HasDefault = true;
+            }
+            else if (IsListLikeType(memberType))
+            {
+                meta.Default = System.Array.Empty<object?>();
+                meta.HasDefault = true;
+            }
+            else if (IsDictionaryLikeType(memberType))
+            {
+                meta.Default = new Dictionary<string, object?>();
+                meta.HasDefault = true;
+            }
+            else if (fieldKind == "spriteSpecifier" || fieldKind == "soundSpecifier")
+            {
+                // Optional reference-type fields whose runtime default is
+                // "no sprite/sound assigned" — leaving the field out of YAML
+                // is the canonical way to express that, so the editor
+                // should show the empty control rather than '(unknown)'.
+                meta.Default = null;
+                meta.HasDefault = true;
+            }
+        }
         return meta;
+    }
+
+    private static bool IsListLikeType(Type t)
+    {
+        if (t.IsArray) return true;
+        if (!t.IsGenericType) return false;
+        return t.Name switch
+        {
+            "List`1" or "IList`1" or "IReadOnlyList`1"
+                or "IEnumerable`1" or "ICollection`1" or "IReadOnlyCollection`1"
+                or "HashSet`1" or "ISet`1" or "IReadOnlySet`1"
+                or "Stack`1" or "Queue`1" => true,
+            _ => false,
+        };
+    }
+
+    private static bool IsDictionaryLikeType(Type t)
+    {
+        if (!t.IsGenericType) return false;
+        return t.Name switch
+        {
+            "Dictionary`2" or "IDictionary`2" or "IReadOnlyDictionary`2"
+                or "SortedDictionary`2" or "ConcurrentDictionary`2" => true,
+            _ => false,
+        };
+    }
+
+    /// <summary>
+    /// Massage a raw IL-extracted literal into the most useful shape for
+    /// the editor. Currently this only handles the enum case: Roslyn folds
+    /// enum literals to their underlying numeric value during compile, so
+    /// the scanner reports an integer; here we resolve it back to the
+    /// member NAME (string) so the WebUI can display "Happy" instead of 0.
+    /// </summary>
+    private static object? MapDefaultToFieldType(object? raw, Type fieldType)
+    {
+        if (raw == null) return null;
+
+        // NaN / ±Infinity cannot be represented in standard JSON and the
+        // serializer throws when it sees them. Drop them rather than try
+        // to encode as strings — the editor would have no good way to
+        // display "Infinity" as a schema default anyway.
+        if (raw is float fv && !float.IsFinite(fv)) return null;
+        if (raw is double dv && !double.IsFinite(dv)) return null;
+
+        // Unwrap Nullable<T> for the type-side check.
+        var t = fieldType;
+        if (t.Name.StartsWith("Nullable") && t.IsGenericType)
+        {
+            try { var inner = t.GetGenericArguments(); if (inner.Length > 0) t = inner[0]; }
+            catch { /* keep t */ }
+        }
+
+        if (t.IsEnum)
+        {
+            // MetadataLoadContext disallows Enum.GetName, so walk the
+            // declared static literal fields manually and compare values.
+            long target;
+            try { target = Convert.ToInt64(raw); }
+            catch { return raw; }
+
+            foreach (var f in t.GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (!f.IsLiteral) continue;
+                try
+                {
+                    var rawVal = f.GetRawConstantValue();
+                    if (rawVal == null) continue;
+                    var lv = Convert.ToInt64(rawVal);
+                    if (lv == target) return f.Name;
+                }
+                catch { /* try next */ }
+            }
+            // Unknown member (could happen for [Flags] combinations) — keep
+            // the numeric value so the editor can still show something.
+        }
+
+        // Bool fields land in IL as `ldc.i4.0/1` (int). Promote back to a
+        // real boolean so the JSON output is `true`/`false`, not `0`/`1`.
+        if (t.Name == "Boolean" && raw is int bi)
+            return bi != 0;
+
+        return raw;
     }
 
     private static string ResolveTag(CustomAttributeData attr, string memberName,

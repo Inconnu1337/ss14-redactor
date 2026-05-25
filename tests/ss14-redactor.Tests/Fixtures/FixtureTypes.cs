@@ -112,3 +112,90 @@ internal sealed class FixtureLightComponent
     [DataField] public float Radius;
     [DataField] public string? Sprite;
 }
+
+// ---------- Fixture for CtorDefaultsScanner ----------
+//
+// Each field carries a literal initializer the scanner should detect. Some
+// "negative" cases are also included: `false`/`0`/`null` default-init the
+// field anyway, so the C# compiler omits the stfld and the scanner returns
+// no value for them. Tests assert both positive and negative outcomes.
+
+[DataDefinition]
+internal sealed class FixtureDefaultsDef
+{
+    [DataField] public bool BoolTrue = true;
+    [DataField] public bool BoolFalseDefault = false;          // compiler omits stfld
+    [DataField] public int IntFive = 5;
+    [DataField] public int IntZeroDefault = 0;                  // compiler omits stfld
+    [DataField] public int IntNegative = -7;
+    [DataField] public long LongBig = 1234567890123L;
+    [DataField] public float FloatPi = 3.14f;
+    [DataField] public double DoubleE = 2.71828;
+    [DataField] public string StrHello = "hello";
+    [DataField] public string? StrNullDefault = null;           // compiler omits stfld
+    [DataField] public FixtureMood MoodHappy = FixtureMood.Happy;
+    [DataField] public string? PropWithDefault { get; set; } = "viaProp";
+    [DataField] public int PropInt { get; set; } = 42;
+}
+
+// ---------- Regression fixtures (defaults edge cases) ----------
+
+internal static class FixtureOpaque
+{
+    public static string MakeStr() => "factory";
+    public static object MakeObj() => new object();
+}
+
+internal sealed class FixtureTwoArgWrapper
+{
+    public FixtureTwoArgWrapper(string a, string b) { _ = a; _ = b; }
+}
+
+// Field initialised via a static factory call; the next field is a plain
+// literal. The scanner must skip past the opaque call without losing the
+// trailing literal default. Mirrors ActionComponent.CheckCanInteract = true.
+[DataDefinition]
+internal sealed class FixtureOpaqueCtorDef
+{
+    [DataField] public string OpaqueByCall = FixtureOpaque.MakeStr();
+    [DataField] public bool TrueAfterCall = true;
+}
+
+// Field initialised via multi-arg newobj where the LAST constructor arg is
+// a string literal. Naively preserving the slot would record "second" as
+// the default. The scanner must mark this slot opaque. The next plain
+// literal field must still be recovered. Mirrors SpriteSpecifier.Rsi(ResPath, "tester_0").
+[DataDefinition]
+internal sealed class FixtureMultiArgNewObjDef
+{
+    [DataField] public FixtureTwoArgWrapper Wrapped = new FixtureTwoArgWrapper("first", "second");
+    [DataField] public int RecoveredAfter = 9;
+}
+
+// Field initialised via `ldsfld` of a cross-assembly non-enum static
+// readonly field (TimeSpan.Zero). The scanner must NOT record "Zero" as
+// an enum member name. Followed by a literal that must still be recovered.
+[DataDefinition]
+internal sealed class FixtureStaticLdsfldDef
+{
+    [DataField] public TimeSpan SpanZero = TimeSpan.Zero;
+    [DataField] public int AfterStatic = 11;
+}
+
+// Field with an explicit `= null` initializer on a reference type is
+// elided by Roslyn (default field value is already null), so no fixture
+// exercises that path: it's covered ad-hoc against real SS14 assemblies.
+
+// Mimic the SS14 runtime-only handles.
+
+internal sealed class FixtureWithRuntimeHandlesDef
+{
+    [DataField] public Robust.Shared.GameObjects.EntityUid Owner;
+    [DataField] public Robust.Shared.GameObjects.NetEntity NetOwner;
+    [DataField] public Robust.Shared.GameObjects.EntityUid? OptionalOwner;
+    [DataField] public System.Collections.Generic.List<Robust.Shared.GameObjects.EntityUid>? OwnerList;
+    [DataField] public string KeepMe = "visible";
+}
+
+
+

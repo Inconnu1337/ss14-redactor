@@ -189,7 +189,12 @@ body {
 }
 .proto-card:hover { border-color: var(--accent); }
 .proto-card.proto-error { border-color: var(--warning); opacity: .8; }
-.proto-card.collapsed .proto-body { display: none; }
+/* Collapsed prototype: keep proto-body visible but hide every non-local
+   field row (inherited + default) and every inherited component card.
+   The user can still see what was edited in this prototype; everything
+   else is suppressed until expanded. */
+.proto-card.collapsed > .proto-body > .field-row:not(.field-local) { display: none; }
+.proto-card.collapsed > .proto-body > .components-section > .component-card:not(.comp-local) { display: none; }
 
 .proto-header {
     display: flex; align-items: center; padding: 6px 12px;
@@ -587,12 +592,15 @@ body {
 .component-card.inherited { border-style: dashed; color: var(--text-muted); }
 .component-card.inherited .component-header { opacity: .65; }
 .component-card.comp-local { border-left: 3px solid var(--accent); }
-.component-card.collapsed .component-body { display: none; }
+/* Collapsed component: keep body visible but hide non-local field rows.
+   Mirrors the proto-card collapse semantics — only overridden fields
+   remain visible. */
+.component-card.collapsed > .component-body > .field-row:not(.field-local) { display: none; }
 
 .component-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 8px 12px; background: rgba(255,255,255,.015);
-    cursor: pointer; user-select: none;
+    user-select: none;
 }
 .component-type {
     font-family: var(--font-mono); font-size: 12px;
@@ -743,7 +751,7 @@ body {
 .delete-proto-btn {
     background: none; border: none; color: var(--error);
     font-size: 20px; cursor: pointer; padding: 0 6px; line-height: 1;
-    margin-left: auto; transition: opacity .15s; opacity: .7;
+    transition: opacity .15s; opacity: .7;
 }
 .delete-proto-btn:hover { opacity: 1; }
 
@@ -1059,6 +1067,34 @@ body {
     /* Stay row-aligned at top so the key sits on its own line and the
        block container drops below. */
     align-items: flex-start;
+    /* `flex-wrap: wrap` together with the order-tricks below keeps the reset
+       button glued to the label line while the block control drops to the
+       next line. */
+    flex-wrap: wrap;
+}
+/* DOM order is always: label, controlWrap, resetBtn. For block fields the
+   controlWrap is full-width and naturally wraps to a new line; swap visual
+   order so the reset button sits next to the label, not orphaned below the
+   block value. */
+.field-row:has(> .field-control-wrap > .list-editor) > .field-reset-btn,
+.field-row:has(> .field-control-wrap > .map-editor) > .field-reset-btn,
+.field-row:has(> .field-control-wrap > .datadef-inline) > .field-reset-btn,
+.field-row:has(> .field-control-wrap > .field-textarea) > .field-reset-btn,
+.field-row:has(> .field-control-wrap > .entries-list) > .field-reset-btn,
+.field-row:has(> .field-control-wrap > .list-items) > .field-reset-btn,
+.field-row:has(.sprite-specifier-ctrl) > .field-reset-btn,
+.field-row:has(.sprite-preview) > .field-reset-btn {
+    order: 2;
+}
+.field-row:has(> .field-control-wrap > .list-editor) > .field-control-wrap,
+.field-row:has(> .field-control-wrap > .map-editor) > .field-control-wrap,
+.field-row:has(> .field-control-wrap > .datadef-inline) > .field-control-wrap,
+.field-row:has(> .field-control-wrap > .field-textarea) > .field-control-wrap,
+.field-row:has(> .field-control-wrap > .entries-list) > .field-control-wrap,
+.field-row:has(> .field-control-wrap > .list-items) > .field-control-wrap,
+.field-row:has(.sprite-specifier-ctrl) > .field-control-wrap,
+.field-row:has(.sprite-preview) > .field-control-wrap {
+    order: 3;
 }
 
 /* ── 3.  Scalar controls → inline YAML-value look ───────────────────── */
@@ -1066,7 +1102,9 @@ body {
 .field-row .field-select {
     font-family: var(--font-mono);
     font-size: 13px;
-    background: transparent;
+    /* Subtle darker background so the input footprint is visible even
+       without hover. The hover rule below promotes contrast further. */
+    background: rgba(0, 0, 0, .22);
     border: 1px solid transparent;
     padding: 0 4px;
     color: var(--yaml-string);
@@ -1164,12 +1202,12 @@ body {
 .list-item:hover .drag-handle,
 .map-entry:hover .drag-handle { opacity: 0.6; }
 
-/* Remove buttons stick to the END of the row (just like field-reset),
-   not glued next to the drag handle. */
+/* Remove buttons sit at the end of the rendered item content (NOT pinned
+   to the right edge of the card). Drag handle stays at the start; the ×
+   appears right after the value or block contents. */
 .list-item .item-remove-btn,
 .map-entry .entry-remove-btn {
     order: 9;
-    margin-left: auto;
     align-self: flex-start;
 }
 
@@ -1396,16 +1434,61 @@ body {
 }
 .field-row .toggle-label { margin-left: 4px; margin-right: 6px; }
 
-/* ── 13. Collapsed component → show "…" so the user sees there's content
-   hidden behind the header line. Placed right after the component name. */
-.component-card.collapsed .component-header::after {
-    content: ' …';
-    color: var(--yaml-comment);
-    font-family: var(--font-mono);
-    font-style: italic;
-    font-size: 13px;
+/* ── 13. Eye-icon collapse / expand button ───────────────────────────
+   Hover-only on the proto / component header. Swaps between open-eye
+   (expanded) and closed-eye (collapsed) glyphs via the `.collapsed`
+   class on the owning card. The button always sits glued next to the
+   type name — never floated to the right edge of the card. */
+.collapse-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 4px;
     margin-left: 4px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity .15s ease, color .15s;
 }
+.collapse-btn:hover { color: var(--accent); }
+.proto-type-line:hover .collapse-btn,
+.component-header:hover .collapse-btn,
+.datadef-header:hover .collapse-btn,
+.proto-card.collapsed .collapse-btn,
+.component-card.collapsed .collapse-btn,
+.datadef-inline.collapsed > .datadef-header .collapse-btn { opacity: 1; }
+.collapse-btn svg { display: inline-block; vertical-align: middle; }
+.collapse-btn .icon-closed { display: none; }
+.proto-card.collapsed > .proto-header .collapse-btn .icon-open,
+.component-card.collapsed > .component-header .collapse-btn .icon-open,
+.datadef-inline.collapsed > .datadef-header .collapse-btn .icon-open { display: none; }
+.proto-card.collapsed > .proto-header .collapse-btn .icon-closed,
+.component-card.collapsed > .component-header .collapse-btn .icon-closed,
+.datadef-inline.collapsed > .datadef-header .collapse-btn .icon-closed { display: inline-block; }
+
+/* Collapse rule for nested objects (DataDefinitions). Mirrors the proto /
+   component rules: when `.datadef-inline.collapsed`, hide every direct
+   field row except the locally-overridden ones. Scoped with `>` so a
+   nested object inside an expanded datadef is unaffected. */
+.datadef-inline.collapsed > .datadef-body > .field-row:not(.field-local) { display: none; }
+/* Datadef header lays out the optional type selector and the eye icon on a
+   single line, with the eye glued to the end (never floated to the far right). */
+.datadef-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── 13c. Hide native spinner arrows on float-typed number inputs only.
+   Integer inputs keep the arrows since stepping by 1 is meaningful. */
+.number-input-float::-webkit-outer-spin-button,
+.number-input-float::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.number-input-float { -moz-appearance: textfield; appearance: textfield; }
 
 /* ── 14. Color field polish ──────────────────────────────────────────
    The text value comes first (YAML token), the colored square is the

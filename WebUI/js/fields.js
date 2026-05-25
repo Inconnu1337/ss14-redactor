@@ -72,9 +72,27 @@ function fieldRow(key, meta, value, source, onChange, onReset) {
     lbl.title = tipParts.join('\n');
     row.appendChild(lbl);
 
-    // Reset button sits on the label line (BEFORE the control-wrap) so block
-    // values (list/map/datadef) can wrap to the next row without pushing the
-    // reset button to the far right of the editor.
+    const controlWrap = _div('field-control-wrap');
+    // 'source === default' means the prototype itself does not override the
+    // field. We then have three sub-cases:
+    //   1. meta.hasDefault === true with a non-null value  → render the control.
+    //   2. meta.hasDefault === true with value null        → render the control with null.
+    //   3. meta.hasDefault is falsy                        → '(unknown)' placeholder.
+    const unknownDefault = source === 'default' && !meta.hasDefault && (value === undefined || value === null);
+    if (unknownDefault) {
+        const ph = _el('span'); ph.className = 'field-default-placeholder'; ph.textContent = '(unknown)';
+        ph.title = 'Click to set a value';
+        ph.addEventListener('click', () => onChange(defaultValueForMeta(meta)));
+        controlWrap.appendChild(ph);
+    } else {
+        controlWrap.appendChild(controlFor(meta, value, false, onChange));
+    }
+
+    row.appendChild(controlWrap);
+
+    // Reset button is the LAST direct child of the row, uniform across every
+    // field type. For block-style values (list/map/datadef) the CSS swaps
+    // visual order via `order:` so the button still sits on the label line.
     if (isLocal && onReset) {
         const resetBtn = _el('button');
         resetBtn.className = 'field-reset-btn';
@@ -84,17 +102,6 @@ function fieldRow(key, meta, value, source, onChange, onReset) {
         row.appendChild(resetBtn);
     }
 
-    const controlWrap = _div('field-control-wrap');
-    if (source === 'default' && (value === undefined || value === null)) {
-        const ph = _el('span'); ph.className = 'field-default-placeholder'; ph.textContent = '(default)';
-        ph.title = 'Click to set a value';
-        ph.addEventListener('click', () => onChange(defaultValueForMeta(meta)));
-        controlWrap.appendChild(ph);
-    } else {
-        controlWrap.appendChild(controlFor(meta, value, false, onChange));
-    }
-
-    row.appendChild(controlWrap);
     if (typeof decorateFieldValidation === 'function')
         decorateFieldValidation(row, meta, value, source);
     return row;
@@ -119,6 +126,7 @@ function genericRow(key, value, source, onChange, onReset) {
     // architectural contract: never coerce an object into '[object Object]'.
     // Both ultimately funnel through the same scalar/list/object renderers.
     controlWrap.appendChild(autoControl(value, false, onChange));
+    row.appendChild(controlWrap);
 
     if (isLocal && onReset) {
         const resetBtn = _el('button');
@@ -126,10 +134,9 @@ function genericRow(key, value, source, onChange, onReset) {
         resetBtn.title = 'Reset to inherited / default value';
         resetBtn.textContent = '↺';
         resetBtn.addEventListener('click', e => { e.stopPropagation(); onReset(); });
-        controlWrap.appendChild(resetBtn);
+        row.appendChild(resetBtn);
     }
 
-    row.appendChild(controlWrap);
     return row;
 }
 
@@ -264,7 +271,7 @@ function intCtrl(val, dis, cb) {
 
 function floatCtrl(val, dis, cb) {
     const w = _div('field-control');
-    const inp = _el('input'); inp.type = 'number'; inp.className = 'field-input number-input';
+    const inp = _el('input'); inp.type = 'number'; inp.className = 'field-input number-input number-input-float';
     inp.value = val != null ? val : ''; inp.step = 'any'; inp.disabled = dis;
     inp.addEventListener('change', () => { const n = parseFloat(inp.value); if (!isNaN(n)) cb(n); });
     w.appendChild(inp); return w;
@@ -370,7 +377,7 @@ function vectorCtrl(val, axes, dis, cb) {
         const g = _div('vector-axis');
         const lbl = _el('span'); lbl.className = 'vector-axis-label'; lbl.textContent = a.toUpperCase();
         const inp = _el('input'); inp.type = 'number'; inp.step = 'any';
-        inp.className = 'field-input vector-input'; inp.value = parts[a]; inp.disabled = dis;
+        inp.className = 'field-input vector-input number-input-float'; inp.value = parts[a]; inp.disabled = dis;
         inp.addEventListener('change', () => { parts[a] = inp.value; emit(); });
         g.append(lbl, inp);
         w.appendChild(g);

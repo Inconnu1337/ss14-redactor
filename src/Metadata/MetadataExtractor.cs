@@ -87,7 +87,11 @@ public static class MetadataExtractor
             Logger.Info("No XML documentation files found (summaries will be empty).");
 
         var dataDefinitions = new Dictionary<string, DataDefinitionMetadata>();
-        var fieldExtractor = new FieldExtractor(xmlDocs, dataDefinitions);
+        // Pre-scan every DLL once for literal field-initializer defaults. The
+        // result is keyed by Type.FullName so it matches whatever
+        // MetadataLoadContext later resolves while extracting fields.
+        var defaultsScanner = new CtorDefaultsScanner();
+        var fieldExtractor = new FieldExtractor(xmlDocs, dataDefinitions, defaultsScanner);
 
         var prototypes = new Dictionary<string, PrototypeMetadata>();
         var components = new Dictionary<string, ComponentMetadata>();
@@ -126,6 +130,14 @@ public static class MetadataExtractor
                     skippedAssemblies++;
                     Logger.Warn($"Could not load assembly {fileName}: {ex.Message}");
                 }
+
+                // Side-channel: pull literal field-initializer defaults from
+                // the SAME DLL via PEReader. Independent of the MLC load above
+                // — even if MLC fails (e.g. mixed-mode native lib), the
+                // PEReader pass is usually still cheap and may yield results.
+                try { defaultsScanner.ScanAssembly(dllPath); }
+                catch (Exception ex)
+                { Logger.Warn($"Defaults scan failed for {fileName}: {ex.Message}"); }
             }
         }
 
@@ -173,6 +185,7 @@ public static class MetadataExtractor
         catch (Exception ex) { Logger.Warn($"Could not write metadata cache: {ex.Message}"); }
 
         Logger.Info($"Extracted {prototypes.Count} prototypes, {components.Count} components, {dataDefinitions.Count} data definitions");
+        Logger.Info($"Recovered literal defaults for {defaultsScanner.TypesWithDefaults} types");
         if (skippedAssemblies > 0)
             Logger.Info($"Skipped {skippedAssemblies} unloadable assemblies (native libs, etc.)");
         if (skippedTypes > 0)
@@ -343,9 +356,18 @@ public static class MetadataExtractor
                 var baseT = type.BaseType;
                 while (baseT != null && baseT.FullName != "System.Object")
                 {
-                    var baseHasDD = baseT.CustomAttributes
-                        .Any(a => a.AttributeType.Name is "DataDefinitionAttribute"
-                            or "ImplicitDataDefinitionForInheritorsAttribute");
+                    // An ancestor counts as a polymorphic !type: target if
+                    // it has its own DataDefinition attribute OR if it
+                    // inherits the DataDef status from a higher
+                    // ImplicitDataDefinitionForInheritors ancestor. The
+                    // second case is critical for chains like
+                    //   ToggleIntrinsicUIEvent : InstantActionEvent
+                    //   : InputComboEvent : HandledEntityEventArgs
+                    // where only the topmost ancestor carries the
+                    // attribute, yet the editor still needs to know that
+                    // ToggleIntrinsicUIEvent is a valid !type: pick for a
+                    // field of declared type InstantActionEvent.
+                    var baseHasDD = HasDirectDataDefAttr(baseT) || HasImplicitDataDefAncestor(baseT);
                     if (baseHasDD)
                     {
                         var baseFull = baseT.FullName ?? baseT.Name;
