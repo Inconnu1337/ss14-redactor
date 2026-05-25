@@ -12,6 +12,12 @@
     <LangVersion>14</LangVersion>
     <!-- Self-contained single-file publish profiles -->
     <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <!-- Required for MetadataLoadContext: forces all managed BCL assemblies to be
+         extracted to disk on first run so PathAssemblyResolver can find System.Runtime.dll.
+         Without this, single-file bundles keep BCL in-memory and TRUSTED_PLATFORM_ASSEMBLIES
+         paths do not exist on disk. -->
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>

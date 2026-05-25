@@ -39,8 +39,9 @@ public static class MetadataExtractor
         Console.WriteLine($"[Redactor] Scanning {binDirs.Count} bin directories: {string.Join(", ", binDirs.Select(Path.GetFileName))}");
         Console.WriteLine("[Redactor] Extracting prototype metadata...");
 
-        var runtimeDir = RuntimeEnvironment.GetRuntimeDirectory();
-        var runtimeDlls = Directory.GetFiles(runtimeDir, "*.dll");
+        var runtimeDlls = FindRuntimeDlls();
+        if (runtimeDlls.Length == 0)
+            Console.Error.WriteLine("[Redactor] WARNING: Could not locate BCL assemblies. Metadata extraction may fail.");
 
         // Collect DLLs from all bin directories, dedup by filename (server takes precedence for shared DLLs)
         var pathMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -272,6 +273,37 @@ public static class MetadataExtractor
                 Fields = fields,
             });
         }
+    }
+
+    /// <summary>
+    /// Returns paths to BCL assemblies for use in PathAssemblyResolver.
+    /// Works in both regular and self-contained single-file mode.
+    /// In single-file mode, RuntimeEnvironment.GetRuntimeDirectory() may return an empty
+    /// or non-existent path, so we fall back to TRUSTED_PLATFORM_ASSEMBLIES.
+    /// </summary>
+    private static string[] FindRuntimeDlls()
+    {
+        // Preferred: TRUSTED_PLATFORM_ASSEMBLIES — always populated by the .NET host,
+        // even in self-contained single-file mode (runtime extracts to a temp dir).
+        var tpa = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
+        if (!string.IsNullOrEmpty(tpa))
+        {
+            var paths = tpa.Split(Path.PathSeparator)
+                           .Where(File.Exists)
+                           .ToArray();
+            if (paths.Length > 0) return paths;
+        }
+
+        // Fallback: scan the runtime directory (works for regular (non-single-file) installs)
+        try
+        {
+            var runtimeDir = RuntimeEnvironment.GetRuntimeDirectory();
+            if (Directory.Exists(runtimeDir))
+                return Directory.GetFiles(runtimeDir, "*.dll");
+        }
+        catch { /* ignore */ }
+
+        return Array.Empty<string>();
     }
 
     private static string InferPrototypeYamlType(CustomAttributeData attr, Type type)
