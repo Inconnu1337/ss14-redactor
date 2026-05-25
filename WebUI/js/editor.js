@@ -366,7 +366,6 @@ function buildCard(proto, idx) {
     hdr.addEventListener('contextmenu', e => {
         e.preventDefault(); e.stopPropagation();
         const items = [
-            { label: 'Rename ID…', action: () => startIdRename(card.querySelector('.proto-id-text'), proto, idx) },
             { label: 'Collapse / Expand', action: () => hdr.querySelector('.collapse-btn').click() },
         ];        if (meta?.className) items.push({ label: 'Open .cs source', action: () => api.openSource(meta.className) });
         items.push('---', { label: 'Delete prototype', danger: true, action: () => hdr.querySelector('.delete-proto-btn').click() });
@@ -453,15 +452,21 @@ function buildCard(proto, idx) {
 
     // Proto-level fields rendered as regular field rows so collapse / override
     // semantics are identical to the metadata-driven fields below.
-    // 1. ID row (always treated as local override — id is mandatory).
-    const idRow = _div('field-row field-local proto-id-row');
-    idRow.innerHTML = `<label class="field-label">id</label>
-        <div class="field-control-wrap">
-            <span class="proto-id-text" title="Double-click to rename ID">${esc(String(id))}</span>
-        </div>`;
-    const idSpan = idRow.querySelector('.proto-id-text');
-    idSpan.addEventListener('dblclick', e => { e.stopPropagation(); startIdRename(idSpan, proto, idx); });
-    body.appendChild(idRow);
+    // 1. ID row — uses the same fieldRow codepath as every other field so
+    //    indentation, override-bar, and reset slot all line up. The id is
+    //    mandatory: editing it clears the resolved-inheritance cache because
+    //    other prototypes may reference it as a parent.
+    const idMeta = { fieldKind: 'string', tag: 'id', required: true };
+    const onIdChange = v => {
+        const fs = state.openFiles.get(state.currentFile);
+        if (!fs || !fs.yaml[idx]) return;
+        const newId = String(v ?? '').trim();
+        if (!newId || newId === fs.yaml[idx].id) return;
+        fs.yaml[idx].id = newId;
+        state.resolvedCache.clear();
+        commitChange(fs);
+    };
+    body.appendChild(fieldRow('id', idMeta, String(id), 'local', onIdChange, null));
     // 2. Abstract row (only when meta declares the field).
     if (absRow) body.appendChild(absRow);
     // 3. Parent row (only for inheriting prototypes).
@@ -519,45 +524,6 @@ function buildCard(proto, idx) {
     });
 
     return card;
-}
-
-// ======================== ID RENAME ====================================
-function startIdRename(idSpan, proto, idx) {
-    const oldId = proto.id || '';
-    const inp = _el('input');
-    inp.type = 'text';
-    inp.className = 'field-input proto-id-input';
-    inp.value = oldId;
-
-    idSpan.textContent = '';
-    idSpan.appendChild(inp);
-    inp.focus();
-    inp.select();
-
-    function finish() {
-        const newId = inp.value.trim();
-        inp.removeEventListener('blur', finish);
-        inp.removeEventListener('keydown', onKey);
-        if (newId && newId !== oldId) {
-            const fs = state.openFiles.get(state.currentFile);
-            if (fs && fs.yaml[idx]) {
-                fs.yaml[idx].id = newId;
-                // Clear the resolved cache since IDs changed
-                state.resolvedCache.clear();
-                commitChange(fs);
-                console.log(`[Editor] Renamed prototype ID: "${oldId}" → "${newId}"`);
-            }
-        }
-        idSpan.textContent = proto.id || '(no id)';
-    }
-
-    function onKey(e) {
-        if (e.key === 'Enter') { e.preventDefault(); finish(); }
-        if (e.key === 'Escape') { inp.value = oldId; finish(); }
-    }
-
-    inp.addEventListener('blur', finish);
-    inp.addEventListener('keydown', onKey);
 }
 
 // ======================== COLLAPSE / EXPAND ALL ========================
@@ -631,6 +597,29 @@ function buildComponentsSection(proto, protoIdx, inherited) {
 
     const localComps = proto.components || [];
     const inhComps   = inherited.components || [];
+    // The components-section behaves like a single "row" at the proto-body
+    // level: it carries `field-local` when this prototype actually defines
+    // local components, otherwise `inherited`. That puts it on the same
+    // visibility codepath as every other row inside `.proto-body`
+    // (collapsed cards hide non-`.field-local` children uniformly).
+    sec.classList.add(localComps.length > 0 ? 'field-local' : 'inherited');
+    // Reset button: drop the whole local `components:` block, falling back
+    // to the inherited list. Same affordance as the per-field reset (↺).
+    if (localComps.length > 0) {
+        const reset = _el('button');
+        reset.className = 'field-reset-btn';
+        reset.textContent = '↺';
+        reset.title = 'Reset components (revert to inherited)';
+        reset.addEventListener('click', e => {
+            e.stopPropagation();
+            const fs = state.openFiles.get(state.currentFile);
+            if (!fs || !fs.yaml[protoIdx]) return;
+            delete fs.yaml[protoIdx].components;
+            state.resolvedCache.clear();
+            commitChange(fs); renderEditor();
+        });
+        sec.querySelector('.components-header').appendChild(reset);
+    }
     const localMap = new Map();
     localComps.forEach((c, i) => { if (c && c.type) localMap.set(c.type, { data: c, idx: i }); });
     const inhMap = new Map();
@@ -642,6 +631,28 @@ function buildComponentsSection(proto, protoIdx, inherited) {
 }
 
 function showAddComponentModal(proto, protoIdx) {
+    const existing = new Set((proto.components || []).map(c => c?.type).filter(Boolean));
+    if (proto.parent) {
+        const inh = resolveInheritance(proto.type, proto.parent);
+        if (inh?.components) for (const c of inh.components) { if (c?.type) existing.add(c.type); }
+    }
+    pickComponentType(existing, (t) => {
+        const fs = state.openFiles.get(state.currentFile);
+        if (!fs || !fs.yaml[protoIdx]) return;
+        if (!fs.yaml[protoIdx].components) fs.yaml[protoIdx].components = [];
+        fs.yaml[protoIdx].components.push({ type: t });
+        commitChange(fs); renderEditor();
+    });
+}
+
+/**
+ * Generic component-type picker modal. Used by the prototype components:
+ * block AND by the ComponentRegistry field control. `excludeSet` is a
+ * Set of component-type strings that should not appear in the list
+ * (already-present components). `onPick(type)` is invoked when the user
+ * selects a row.
+ */
+function pickComponentType(excludeSet, onPick) {
     const overlay = _div('modal-overlay');
     const modal = _div('modal');
     modal.innerHTML = `<div class="modal-header"><h3>Add Component</h3><button class="modal-close">\u00d7</button></div>
@@ -654,31 +665,16 @@ function showAddComponentModal(proto, protoIdx) {
 
     const searchInp = modal.querySelector('.modal-search');
     const listEl = modal.querySelector('.modal-list');
-    const existing = new Set((proto.components || []).map(c => c?.type).filter(Boolean));
-    // Also exclude inherited components
-    if (proto.parent) {
-        const inh = resolveInheritance(proto.type, proto.parent);
-        if (inh?.components) for (const c of inh.components) { if (c?.type) existing.add(c.type); }
-    }
-    const types = state.metadata?.components ? Object.keys(state.metadata.components).sort().filter(t => !existing.has(t)) : [];
+    const types = state.metadata?.components ? Object.keys(state.metadata.components).sort().filter(t => !excludeSet.has(t)) : [];
 
     function renderList(q) {
         listEl.innerHTML = '';
-        // Unified smart-search: subsequence per space-separated token.
-        // Lets users find "CEStaminaThrowable" via "throw stam".
         const filtered = types.filter(t => smartMatch(t, q));
         if (!filtered.length) { listEl.innerHTML = '<div class="dropdown-empty">No components found</div>'; return; }
         for (const t of filtered.slice(0, 100)) {
             const el = _div('modal-list-item');
             el.textContent = t;
-            el.addEventListener('click', () => {
-                overlay.remove();
-                const fs = state.openFiles.get(state.currentFile);
-                if (!fs || !fs.yaml[protoIdx]) return;
-                if (!fs.yaml[protoIdx].components) fs.yaml[protoIdx].components = [];
-                fs.yaml[protoIdx].components.push({ type: t });
-                commitChange(fs); renderEditor();
-            });
+            el.addEventListener('click', () => { overlay.remove(); onPick(t); });
             listEl.appendChild(el);
         }
     }
@@ -701,7 +697,13 @@ function localizeComponent(protoIdx, compType) {
     return fs.yaml[protoIdx].components.length - 1;
 }
 
-function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
+function compCard(compType, data, isInh, protoIdx, compIdx, inherited, ctx) {
+    // `ctx` (optional) decouples this card from prototype state so it can
+    // also be used by the ComponentRegistry field control. When provided,
+    // it intercepts mutations: { write(tag, value), reset(tag), remove(),
+    // localize() -> newIdx }. Inheritance UI is suppressed in ctx mode
+    // because a ComponentRegistry has no parent chain.
+    if (ctx) isInh = false;
     // Default to collapsed for every component (inherited or local). Only
     // overridden field rows show until the user expands via the eye icon.
     const startCollapsed = true;
@@ -710,7 +712,7 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
     // value rather than truly deleting it. Surface that distinction in
     // the icon/tooltip so the design matches plain field rows (↺ for
     // override-reset, × for outright remove).
-    const isOverride = !isInh && Array.isArray(inherited?.components)
+    const isOverride = !isInh && !ctx && Array.isArray(inherited?.components)
         && inherited.components.some(c => c && c.type === compType);
     const card = _div('component-card' + (startCollapsed ? ' collapsed' : '') + (isInh ? ' inherited' : ' comp-local'));
     const cMeta = state.metadata?.components?.[compType];
@@ -732,6 +734,7 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
         }
         rmBtn.addEventListener('click', e => {
             e.stopPropagation();
+            if (ctx) { ctx.remove(); return; }
             const fs = state.openFiles.get(state.currentFile);
             if (fs && fs.yaml[protoIdx]?.components) {
                 fs.yaml[protoIdx].components.splice(compIdx, 1);
@@ -746,6 +749,7 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
         if (cMeta?.className) items.push({ label: 'Open .cs source', action: () => api.openSource(cMeta.className) });
         if (!isInh && compIdx >= 0) {
             items.push('---', { label: isOverride ? 'Reset to inherited' : 'Remove component', danger: !isOverride, action: () => {
+                if (ctx) { ctx.remove(); return; }
                 const fs = state.openFiles.get(state.currentFile);
                 if (fs && fs.yaml[protoIdx]?.components) {
                     fs.yaml[protoIdx].components.splice(compIdx, 1);
@@ -773,6 +777,7 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
 
     // For inherited components, editing any field "localizes" the component first
     function compOnChange(tag, nv) {
+        if (ctx) { ctx.write(tag, nv); return; }
         if (isInh) {
             const newIdx = localizeComponent(protoIdx, compType);
             if (newIdx < 0) return;
@@ -782,6 +787,7 @@ function compCard(compType, data, isInh, protoIdx, compIdx, inherited) {
         }
     }
     function compOnReset(tag) {
+        if (ctx) { ctx.reset(tag); return; }
         if (!isInh && compIdx >= 0) deleteField([protoIdx, 'components', compIdx], tag);
     }
 
@@ -877,6 +883,10 @@ function scheduleAutosave(fs) {
                 const stamps = await api.fileStamps([fs.path]);
                 if (stamps[fs.path]) state.fileStamps.set(fs.path, stamps[fs.path]);
             } catch {}
+            // Refresh git decorations so the tree + tabs colour the file as
+            // modified. The Ctrl+S handler does the same — autosave used to
+            // skip it, leaving the tree stale until the next SSE event.
+            scheduleGitRefresh(100);
         }
         catch (e) {
             console.error('[Editor] Save failed:', fs.path, e);

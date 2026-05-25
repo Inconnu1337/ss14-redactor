@@ -83,6 +83,7 @@ public static class RedactorServer
     {
         var redactorDir = Path.Combine(solutionRoot, "Redactor");
         var prototypesDir = Path.Combine(solutionRoot, "Resources", "Prototypes");
+        var resourcesDir = Path.Combine(solutionRoot, "Resources");
         var texturesDir = Path.Combine(solutionRoot, "Resources", "Textures");
         var audioDir = Path.Combine(solutionRoot, "Resources", "Audio");
         var enginePrototypesDir = Path.Combine(solutionRoot, "RobustToolbox", "Resources", "EnginePrototypes");
@@ -92,6 +93,7 @@ public static class RedactorServer
             SolutionRoot = solutionRoot,
             RedactorDir = redactorDir,
             PrototypesDir = prototypesDir,
+            ResourcesDir = resourcesDir,
             TexturesDir = texturesDir,
             AudioDir = audioDir,
             EnginePrototypesDir = enginePrototypesDir,

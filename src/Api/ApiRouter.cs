@@ -59,6 +59,8 @@ internal sealed partial class ApiRouter
             ["/api/texture-browse"] = HandleTextureBrowseAsync,
             ["/api/audio"] = HandleAudioAsync,
             ["/api/audio-browse"] = HandleAudioBrowseAsync,
+            ["/api/resource"] = HandleResourceAsync,
+            ["/api/res-browse"] = HandleResourceBrowseAsync,
 
             // OS integration (SourceApi.cs)
             ["/api/open-in-explorer"] = HandleOpenInExplorerAsync,

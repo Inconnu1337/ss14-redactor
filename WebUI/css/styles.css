@@ -191,10 +191,13 @@ body {
 .proto-card:hover { border-color: var(--accent); }
 .proto-card.proto-error { border-color: var(--warning); opacity: .8; }
 /* Collapsed prototype: keep proto-body visible but hide every non-local
-   field row (inherited + default) and every inherited component card.
-   The user can still see what was edited in this prototype; everything
-   else is suppressed until expanded. */
-.proto-card.collapsed > .proto-body > .field-row:not(.field-local) { display: none; }
+   child uniformly. Field rows, the components section, and anything else
+   we render inside `.proto-body` are tagged with `.field-local` when they
+   carry a local override; everything else is inherited and hidden until
+   the user expands via the eye icon. Components that ARE locally defined
+   keep their section visible, but inherited component-cards inside that
+   section are hidden by the second rule. */
+.proto-card.collapsed > .proto-body > *:not(.field-local) { display: none; }
 .proto-card.collapsed > .proto-body > .components-section > .component-card:not(.comp-local) { display: none; }
 
 .proto-header {
@@ -211,21 +214,6 @@ body {
 .proto-id-text {
     font-family: var(--font-mono); font-size: 14px; font-weight: 500;
     cursor: text;
-}
-.proto-id-text:hover { text-decoration: underline dashed var(--text-muted); text-underline-offset: 3px; }
-.proto-id-input {
-    font-family: var(--font-mono); font-size: 14px; font-weight: 500;
-    background: var(--bg-input); border: 1px solid var(--accent);
-    color: var(--text-primary); padding: 2px 6px; border-radius: var(--radius-sm);
-    width: 250px; outline: none;
-}
-
-/* Parent sub-header bar */
-.proto-parent-bar {
-    display: flex; align-items: center; gap: 8px;
-    padding: 4px 12px; background: rgba(88, 166, 255, 0.06);
-    border-bottom: 1px solid var(--border-subtle);
-    flex-wrap: wrap;
 }
 
 .proto-body { padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; }
@@ -571,6 +559,9 @@ body {
 .components-section {
     margin-top: 14px; border-top: 2px solid var(--border); padding-top: 14px;
 }
+/* Mirror the inherited-field-row look: no local components → whole
+   block dims to signal "this is fully inherited". */
+.components-section.inherited { opacity: 0.55; }
 .components-header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 10px; font-size: 12px; font-weight: 400;
@@ -924,28 +915,10 @@ body {
 }
 .modal-back-btn:hover { color: var(--text-primary); }
 
-/* id/abstract sub-rows sit inside .proto-header (sticky during collapse).
-   They inherit .field-row look from section 2 below. The label text "id"
-   itself is the YAML key, so we DON'T add a "id: " ::before on .proto-id-text.
-   !important is needed because `.field-row.field-local { padding-left: 0 }`
-   in section 2 has equal specificity and would otherwise reset the indent.
-   The extra `--proto-drag-offset` matches the width of the drag handle
-   sitting on the `- type:` line above, so all sub-rows visually align
-   under the YAML key, not under the handle. */
+/* The drag handle on the type-line occupies horizontal space that body rows
+   don't have. Reserve a matching offset so child rows visually align under
+   the YAML key column, not under the handle. */
 :root { --proto-drag-offset: 18px; }
-.field-row.proto-id-row,
-.field-row.proto-abstract-row { padding-left: calc(var(--yaml-indent) + var(--proto-drag-offset)) !important; }
-.proto-parent-bar { padding-left: calc(var(--yaml-indent) + var(--proto-drag-offset)) !important; }
-.proto-id-text { font-size: 13px; color: var(--yaml-string); font-family: var(--font-mono); cursor: text; padding-left: 4px; }
-.proto-id-text::before { content: ''; }
-.proto-id-text:hover { text-decoration: underline dashed var(--text-muted); text-underline-offset: 3px; }
-
-.proto-parent-bar {
-    background: transparent;
-    border-bottom: none;
-    padding: 0;
-    padding-left: calc(var(--yaml-indent) + var(--proto-drag-offset));
-}
 .proto-body {
     padding: 2px 12px 8px;
     padding-left: calc(12px + var(--yaml-indent) + var(--proto-drag-offset));
@@ -1147,7 +1120,9 @@ body {
 .map-entry:hover .entry-remove-btn,
 .field-row:focus-within .field-reset-btn,
 .component-card:hover .component-header .field-reset-btn,
-.component-header:hover .field-reset-btn { opacity: 1; }
+.component-header:hover .field-reset-btn,
+.components-header:hover .field-reset-btn,
+.components-section:hover > .components-header .field-reset-btn { opacity: 1; }
 .field-reset-btn:hover { background: var(--warning); color: #000; border-color: var(--warning); }
 .item-remove-btn:hover, .entry-remove-btn:hover { background: var(--error); color: #fff; }
 
@@ -1155,7 +1130,7 @@ body {
 .list-editor, .map-editor {
     display: flex; flex-direction: column;
     gap: 0;
-    padding-left: var(--yaml-indent);
+    padding-left: 1ch;
     width: 100%;
 }
 .list-item, .map-entry {
@@ -1231,7 +1206,6 @@ body {
     border-style: solid;
     border-color: var(--accent);
 }
-.list-add-btn::before { content: '# '; color: var(--yaml-comment); }
 
 .map-key-label {
     color: var(--yaml-key);
@@ -1698,7 +1672,9 @@ body {
 .field-reset-btn,
 .collapse-btn,
 .delete-proto-btn,
-.proto-type-line .delete-proto-btn {
+.proto-type-line .delete-proto-btn,
+.item-remove-btn,
+.entry-remove-btn {
     box-sizing: border-box;
     width: 22px; height: 22px;
     padding: 0; margin: 0 0 0 4px;
@@ -1714,7 +1690,9 @@ body {
 /* Stretch the proto/component ? glyph optically � it sits visually small
    because '\u00D7' has a narrow advance. */
 .field-reset-btn.comp-remove-btn,
-.delete-proto-btn { font-size: 16px; }
+.delete-proto-btn,
+.item-remove-btn,
+.entry-remove-btn { font-size: 16px; }
 
 /* Hover tints � only border + text colour change, no full background fill. */
 .field-reset-btn:hover {
@@ -1723,7 +1701,9 @@ body {
     color: var(--warning);
 }
 .field-reset-btn.comp-remove-btn:hover,
-.delete-proto-btn:hover {
+.delete-proto-btn:hover,
+.item-remove-btn:hover,
+.entry-remove-btn:hover {
     background: transparent;
     border-color: var(--error);
     color: var(--error);

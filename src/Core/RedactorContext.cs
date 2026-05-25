@@ -10,6 +10,7 @@ internal sealed class RedactorContext
     public required string SolutionRoot { get; init; }
     public required string RedactorDir { get; init; }
     public required string PrototypesDir { get; init; }
+    public required string ResourcesDir { get; init; }
     public required string TexturesDir { get; init; }
     public required string AudioDir { get; init; }
     public required string EnginePrototypesDir { get; init; }

@@ -282,15 +282,6 @@ public sealed class FieldExtractor
                 meta.Default = new Dictionary<string, object?>();
                 meta.HasDefault = true;
             }
-            else if (fieldKind == "spriteSpecifier" || fieldKind == "soundSpecifier")
-            {
-                // Optional reference-type fields whose runtime default is
-                // "no sprite/sound assigned" — leaving the field out of YAML
-                // is the canonical way to express that, so the editor
-                // should show the empty control rather than '(unknown)'.
-                meta.Default = null;
-                meta.HasDefault = true;
-            }
         }
         return meta;
     }
@@ -440,12 +431,18 @@ public sealed class FieldExtractor
             "SpriteSpecifier" => ("spriteSpecifier", null, null),
             "SoundSpecifier" or "SoundPathSpecifier" or "SoundCollectionSpecifier"
                 => ("soundSpecifier", null, null),
+            "ResPath" or "ResourcePath" => ("resPath", null, null),
             "Vector2" or "Vector2i" => ("vector2", null, null),
             "Vector3" or "Vector3i" => ("vector3", null, null),
             "Vector4" => ("vector4", null, null),
             "Box2" or "Box2i" => ("box2", null, null),
             "TimeSpan" => ("text", null, null),
             "LocId" => ("text", null, null),
+            // ComponentRegistry is structurally a list of component entries
+            // (mirrors the top-level `components:` block on a prototype).
+            // Surfacing it as its own field-kind lets the WebUI render the
+            // same compCard UI used for the prototype components block.
+            "ComponentRegistry" => ("componentRegistry", null, null),
             _ when name.StartsWith("ProtoId") && type.IsGenericType => ExtractProtoIdInfo(type),
             _ when name.StartsWith("EntProtoId") && type.IsGenericType => ("entityProtoId", null, null),
             _ when type.IsArray => ("list", null, null),

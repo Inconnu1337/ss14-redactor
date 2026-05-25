@@ -175,6 +175,16 @@ function controlFor(meta, value, dis, onChange) {
         return unsupportedStub(ddType || 'Object', value, onChange);
     }
 
+    // Defensive: if the backend classified this field as a primitive kind
+    // but the actual YAML value is a structured object / array (e.g. a
+    // ComponentRegistry-typed field the metadata extractor couldn't model),
+    // hand off to autoControl rather than letting textCtrl stringify the
+    // value into "[object Object],[object Object],...".
+    const primKinds = { boolean: 1, integer: 1, float: 1, text: 1, color: 1, enum: 1, flags: 1, entityProtoId: 1, protoId: 1 };
+    if (primKinds[kind] && value !== null && typeof value === 'object') {
+        return autoControl(value, dis, onChange, meta.fullType || meta.type);
+    }
+
     switch (kind) {
         case 'boolean':       return boolCtrl(value, dis, onChange);
         case 'integer':       return intCtrl(value, dis, onChange);
@@ -193,6 +203,8 @@ function controlFor(meta, value, dis, onChange) {
         case 'box2':          return vectorCtrl(value, ['l', 'b', 'r', 't'], dis, onChange);
         case 'spriteSpecifier': return spriteSpecifierCtrl(value, dis, onChange);
         case 'soundSpecifier':  return soundSpecifierCtrl(value, dis, onChange);
+        case 'resPath':         return resPathCtrl(value, dis, onChange);
+        case 'componentRegistry': return componentRegistryCtrl(value, dis, onChange);
         default:
             if (meta.isDataDefinition && meta.dataDefinitionType) return dataDefCtrl(value, meta.dataDefinitionType, dis, onChange);
             return autoControl(value, dis, onChange, meta.fullType || meta.type);
@@ -537,6 +549,7 @@ function defaultForKind(kind) {
         case 'box2':    return '0, 0, 0, 0';
         case 'spriteSpecifier': return { sprite: '', state: '' };
         case 'soundSpecifier': return { path: '' };
+        case 'componentRegistry': return [];
         case 'object':  return {};
         default: return '';
     }

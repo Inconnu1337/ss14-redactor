@@ -38,6 +38,12 @@ function resPathAutocomplete(input, opts = {}) {
     // packs get a tiny SpriteView preview of their first state prepended,
     // so the user can pick by sight in the SpriteSpecifier picker.
     const previewRsi = !!opts.previewRsi;
+    // Endpoints used for inline preview. Default to the legacy
+    // texture/audio-rooted endpoints; the generic ResPath picker overrides
+    // both to `/api/resource` so previews work for files anywhere under
+    // Resources/.
+    const textureUrl = opts.textureUrl || '/api/texture';
+    const audioUrl   = opts.audioUrl   || '/api/audio';
     const TEXTURE_EXTS = ['.png', '.jpg', '.jpeg', '.svg', '.bmp'];
 
     const dd = _div('respath-dropdown');
@@ -112,7 +118,7 @@ function resPathAutocomplete(input, opts = {}) {
                 const fullPath = prefix + f;
                 const thumb = _el('img');
                 thumb.className = 'respath-thumb';
-                thumb.src = `/api/texture?path=${encodeURIComponent(fullPath)}`;
+                thumb.src = `${textureUrl}?path=${encodeURIComponent(fullPath)}`;
                 thumb.alt = '';
                 thumb.loading = 'lazy';
                 // Failed loads (e.g. unsupported format) collapse silently.
@@ -142,7 +148,7 @@ function resPathAutocomplete(input, opts = {}) {
                 playBtn.addEventListener('click', e => {
                     e.stopPropagation(); e.preventDefault();
                     if (audio) { stop(); return; }
-                    audio = new Audio(`/api/audio?path=${encodeURIComponent(fullPath)}`);
+                    audio = new Audio(`${audioUrl}?path=${encodeURIComponent(fullPath)}`);
                     audio.addEventListener('ended', stop);
                     audio.play().then(() => { playBtn.textContent = '■'; })
                         .catch(() => { playBtn.textContent = '!'; audio = null; });
@@ -241,6 +247,39 @@ function resPathAutocomplete(input, opts = {}) {
     });
 
     return { browse, hide, destroy: () => dd.remove() };
+}
+
+// ======================== GENERIC ResPath FIELD ========================
+/**
+ * Plain ResPath field — a project-wide file picker. Reuses the unified
+ * `resPathAutocomplete` dropdown (with image thumbnails and inline audio
+ * preview) but does NOT render a preview of the *selected* value: the
+ * field is just a convenient way to type/search a resource path.
+ * Browses everything under <Project>/Resources/ via /api/res-browse,
+ * with previews served by /api/resource.
+ */
+function resPathCtrl(val, dis, cb) {
+    const w = _div('field-control');
+    const inp = _el('input');
+    inp.type = 'text';
+    inp.className = 'field-input';
+    inp.value = typeof val === 'string' ? val : '';
+    inp.disabled = !!dis;
+    w.appendChild(inp);
+
+    const emit = () => cb(inp.value);
+    inp.addEventListener('change', emit);
+    if (!dis) {
+        resPathAutocomplete(inp, {
+            apiUrl: '/api/res-browse',
+            textureUrl: '/api/resource',
+            audioUrl: '/api/resource',
+            previewTexture: true,
+            previewAudio: true,
+            onPick(v) { inp.value = v; emit(); },
+        });
+    }
+    return w;
 }
 
 // ======================== SPRITE SPECIFIER =============================

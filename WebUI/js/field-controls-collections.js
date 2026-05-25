@@ -452,3 +452,56 @@ function dataDefCtrl(val, ddType, dis, onChange) {
     }
     return w;
 }
+
+// ======================== COMPONENT REGISTRY ============================
+//  ComponentRegistry-typed fields (e.g. ChangeComponentsSpellEvent.toAdd)
+//  are structurally identical to the top-level prototype `components:`
+//  block. We reuse compCard from editor.js with a custom `ctx` adapter
+//  so all mutations stay scoped to this field's value instead of
+//  touching the surrounding prototype state.
+function componentRegistryCtrl(val, dis, onChange) {
+    const arr = Array.isArray(val) ? val.map(e => ({ ...e })) : [];
+    const w = _div('field-control component-registry');
+
+    const sec = _div('components-section field-local');
+    const hdr = _div('components-header');
+    hdr.innerHTML = '<span>components</span>';
+    if (!dis) {
+        const addBtn = _el('button');
+        addBtn.className = 'add-component-btn';
+        addBtn.title = 'Add component';
+        addBtn.textContent = '+';
+        addBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            const taken = new Set(arr.map(c => c?.type).filter(Boolean));
+            pickComponentType(taken, t => {
+                arr.push({ type: t });
+                onChange(arr.map(e => ({ ...e })));
+            });
+        });
+        hdr.appendChild(addBtn);
+    }
+    sec.appendChild(hdr);
+
+    arr.forEach((entry, i) => {
+        if (!entry || !entry.type) return;
+        const ctx = {
+            write(tag, value) {
+                arr[i] = { ...arr[i], [tag]: value };
+                onChange(arr.map(e => ({ ...e })));
+            },
+            reset(tag) {
+                if (arr[i]) { const c = { ...arr[i] }; delete c[tag]; arr[i] = c; }
+                onChange(arr.map(e => ({ ...e })));
+            },
+            remove() {
+                arr.splice(i, 1);
+                onChange(arr.map(e => ({ ...e })));
+            },
+        };
+        sec.appendChild(compCard(entry.type, entry, false, -1, i, null, ctx));
+    });
+
+    w.appendChild(sec);
+    return w;
+}
