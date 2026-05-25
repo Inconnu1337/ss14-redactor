@@ -77,33 +77,141 @@ function showAddProtoModal() {
     const overlay = _div('modal-overlay');
     const modal = _div('modal');
     modal.innerHTML = `<div class="modal-header"><h3>Add Prototype</h3><button class="modal-close">\u00d7</button></div>
-        <div class="modal-body">
-            <input type="text" class="field-input modal-search" placeholder="Search prototype type\u2026" autocomplete="off">
-            <div class="modal-list"></div>
-        </div>`;
+        <div class="modal-body"></div>`;
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
-
-    const searchInp = modal.querySelector('.modal-search');
-    const listEl = modal.querySelector('.modal-list');
-    const types = state.metadata?.prototypes ? Object.keys(state.metadata.prototypes).sort() : [];
-
-    function renderList(q) {
-        listEl.innerHTML = '';
-        const filtered = types.filter(t => smartMatch(t, q));
-        if (!filtered.length) { listEl.innerHTML = '<div class="dropdown-empty">No types found</div>'; return; }
-        for (const t of filtered.slice(0, 100)) {
-            const el = _div('modal-list-item');
-            el.textContent = t;
-            el.addEventListener('click', () => { overlay.remove(); addNewPrototype(t); });
-            listEl.appendChild(el);
-        }
-    }
-    renderList('');
-    searchInp.addEventListener('input', () => renderList(searchInp.value));
-    searchInp.focus();
+    const body = modal.querySelector('.modal-body');
     modal.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+    // ── Step 1: pick prototype type ──────────────────────────────────
+    function showStepType() {
+        body.innerHTML = `<input type="text" class="field-input modal-search" placeholder="Search prototype type\u2026" autocomplete="off"><div class="modal-list"></div>`;
+        const searchInp = body.querySelector('.modal-search');
+        const listEl = body.querySelector('.modal-list');
+        const types = state.metadata?.prototypes ? Object.keys(state.metadata.prototypes).sort() : [];
+        function renderList(q) {
+            listEl.innerHTML = '';
+            const filtered = types.filter(t => smartMatch(t, q));
+            if (!filtered.length) { listEl.innerHTML = '<div class="dropdown-empty">No types found</div>'; return; }
+            for (const t of filtered.slice(0, 100)) {
+                const el = _div('modal-list-item');
+                el.textContent = t;
+                el.addEventListener('click', () => showStepMode(t));
+                listEl.appendChild(el);
+            }
+        }
+        renderList('');
+        searchInp.addEventListener('input', () => renderList(searchInp.value));
+        searchInp.focus();
+        modal.querySelector('h3').textContent = 'Add Prototype';
+    }
+
+    // ── Step 2: empty vs copy-from-existing ──────────────────────────
+    function showStepMode(type) {
+        modal.querySelector('h3').textContent = `Add ${type}`;
+        body.innerHTML = `
+            <div class="add-proto-mode-row">
+                <button class="add-proto-mode-btn" data-mode="empty">
+                    <div class="add-proto-mode-title">Empty prototype</div>
+                    <div class="add-proto-mode-hint">Start from a fresh ${esc(type)} with only <code>id</code> set.</div>
+                </button>
+                <button class="add-proto-mode-btn" data-mode="copy">
+                    <div class="add-proto-mode-title">Copy from existing</div>
+                    <div class="add-proto-mode-hint">Pick an existing ${esc(type)} and clone all its fields.</div>
+                </button>
+            </div>
+            <div class="modal-back-row"><button class="modal-back-btn">\u2190 Back</button></div>`;
+        body.querySelector('[data-mode="empty"]').addEventListener('click', () => {
+            overlay.remove();
+            addNewPrototype(type);
+        });
+        body.querySelector('[data-mode="copy"]').addEventListener('click', () => showStepCopy(type));
+        body.querySelector('.modal-back-btn').addEventListener('click', showStepType);
+    }
+
+    // ── Step 3: pick source prototype to clone ───────────────────────
+    function showStepCopy(type) {
+        modal.querySelector('h3').textContent = `Copy ${type}`;
+        body.innerHTML = `
+            <input type="text" class="field-input modal-search" placeholder="Search ${esc(type)} prototype\u2026" autocomplete="off">
+            <div class="modal-list"></div>
+            <div class="modal-back-row"><button class="modal-back-btn">\u2190 Back</button></div>`;
+        const searchInp = body.querySelector('.modal-search');
+        const listEl = body.querySelector('.modal-list');
+        body.querySelector('.modal-back-btn').addEventListener('click', () => showStepMode(type));
+        let timer;
+        async function doSearch(q) {
+            try {
+                const tokens = String(q || '').trim().split(/\s+/).filter(Boolean);
+                const serverHint = tokens[0] || '';
+                const res = await api.searchProtos(type, serverHint);
+                const refined = tokens.length > 1
+                    ? res.filter(r => smartMatch(r.id, q) || smartMatch(r.name || '', q))
+                    : res;
+                listEl.innerHTML = '';
+                if (!refined.length) { listEl.innerHTML = '<div class="dropdown-empty">No prototypes found</div>'; return; }
+                for (const r of refined.slice(0, 200)) {
+                    const el = _div('modal-list-item');
+                    el.textContent = r.id;
+                    el.addEventListener('click', () => {
+                        overlay.remove();
+                        copyPrototype(type, r.id);
+                    });
+                    listEl.appendChild(el);
+                }
+            } catch (e) { console.error('[AddProto] search failed:', e); }
+        }
+        searchInp.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => doSearch(searchInp.value), CFG.searchDebounce); });
+        searchInp.focus();
+        doSearch('');
+    }
+
+    showStepType();
+}
+
+/**
+ * Deep-clone an existing prototype into the currently open file. The
+ * source proto's YAML is loaded fresh from disk (it may live in a
+ * different file than the current one), all keys are copied verbatim,
+ * and the id is mutated to a unique name so the new entry doesn't
+ * collide with the original.
+ */
+async function copyPrototype(type, sourceId) {
+    const entries = state.protoIndex?.[type] || [];
+    const entry = entries.find(e => e.id === sourceId);
+    if (!entry?.file) { toast('Source prototype not found in index'); return; }
+    let src;
+    try {
+        // Prefer the in-memory yaml of an open tab so any unsaved edits
+        // are honoured; fall back to a disk read otherwise.
+        const openFs = state.openFiles.get(entry.file);
+        const yaml = openFs?.yaml ?? parseYaml((await api.loadFile(entry.file)).content);
+        src = (Array.isArray(yaml) ? yaml : []).find(p => p?.type === type && p?.id === sourceId);
+    } catch (e) {
+        toast('Failed to read source file: ' + e.message);
+        return;
+    }
+    if (!src) { toast(`Prototype "${sourceId}" not found in ${entry.file}`); return; }
+    const fs = state.openFiles.get(state.currentFile);
+    if (!fs) return;
+    if (!Array.isArray(fs.yaml)) fs.yaml = [];
+    const clone = JSON.parse(JSON.stringify(src));
+    clone.id = _generateUniqueProtoId(type, sourceId);
+    fs.yaml.push(clone);
+    commitChange(fs);
+    renderEditor();
+    const area = document.getElementById('editor-area');
+    area.scrollTop = area.scrollHeight;
+}
+
+function _generateUniqueProtoId(type, base) {
+    const entries = state.protoIndex?.[type] || [];
+    const used = new Set(entries.map(e => e.id));
+    let id = base + 'Copy';
+    let n = 1;
+    while (used.has(id)) { id = base + 'Copy' + n; n++; }
+    return id;
 }
 
 function addNewPrototype(type) {
@@ -146,6 +254,7 @@ function buildCard(proto, idx) {
     // The parent-bar (see below) is appended next, also part of the sticky header.
     const hdr = _div('proto-header');
     hdr.innerHTML = `<div class="proto-type-line">
+            <span class="proto-drag-handle" draggable="true" title="Drag to reorder">\u22ee\u22ee</span>
             <span class="proto-type-badge" title="${esc(meta?.summary || '')}">${esc(type)}</span>
             <button class="delete-proto-btn" title="Delete prototype">×</button>
         </div>
@@ -214,6 +323,43 @@ function buildCard(proto, idx) {
         showContextMenu(e.clientX, e.clientY, items);
     });
     card.appendChild(hdr);
+
+    // ── Drag-drop reorder ────────────────────────────────────────────
+    // The handle is the only draggable surface so that text-selection in
+    // inputs still works normally. Drop targets are the sibling cards.
+    card.dataset.protoIdx = String(idx);
+    const dragHandle = hdr.querySelector('.proto-drag-handle');
+    dragHandle.addEventListener('dragstart', e => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('application/x-proto-idx', String(idx));
+        // Some browsers require a text/plain fallback or dragstart is rejected.
+        e.dataTransfer.setData('text/plain', String(idx));
+        card.classList.add('dragging');
+    });
+    dragHandle.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('dragover', e => {
+        if (!e.dataTransfer.types.includes('application/x-proto-idx')) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        card.classList.add('drop-target');
+    });
+    card.addEventListener('dragleave', e => {
+        if (e.target === card) card.classList.remove('drop-target');
+    });
+    card.addEventListener('drop', e => {
+        card.classList.remove('drop-target');
+        if (!e.dataTransfer.types.includes('application/x-proto-idx')) return;
+        e.preventDefault();
+        const from = parseInt(e.dataTransfer.getData('application/x-proto-idx'), 10);
+        const to = idx;
+        if (Number.isNaN(from) || from === to) return;
+        const fs = state.openFiles.get(state.currentFile);
+        if (!fs || !Array.isArray(fs.yaml) || from < 0 || from >= fs.yaml.length) return;
+        const [moved] = fs.yaml.splice(from, 1);
+        fs.yaml.splice(to, 0, moved);
+        commitChange(fs);
+        renderEditor();
+    });
 
     // Parent sub-header (uses same list<protoId> logic as other fields)
     if (inheriting) {
