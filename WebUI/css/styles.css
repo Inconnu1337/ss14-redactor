@@ -1,0 +1,1476 @@
+/* ====================================================================== */
+/*  SS14 Prototype Redactor – Discord-inspired Dark Theme                 */
+/* ====================================================================== */
+
+:root {
+    /* Backgrounds – Discord blue-gray */
+    --bg-primary:       #313338;
+    --bg-secondary:     #2b2d31;
+    --bg-tertiary:      #1e1f22;
+    --bg-surface:       #383a40;
+    --bg-surface-hover: #404249;
+    --bg-surface-active:#4e505a;
+    --bg-input:         #1e1f22;
+    --bg-card:          #2b2d31;
+
+    /* Borders */
+    --border:           #3f4147;
+    --border-focus:     #5865f2;
+    --border-subtle:    #35373c;
+
+    /* Text */
+    --text-primary:     #f2f3f5;
+    --text-secondary:   #b5bac1;
+    --text-muted:       #6d6f78;
+    --text-inherited:   #5c5e66;
+
+    /* Accent – Discord blurple */
+    --accent:           #5865f2;
+    --accent-hover:     #4752c4;
+    --accent-dim:       rgba(88, 101, 242, .15);
+
+    /* Semantic */
+    --success:          #23a559;
+    --error:            #da373c;
+    --warning:          #f0b132;
+    --info:             #5865f2;
+
+    /* Radii / shadows */
+    --radius-sm:  4px;
+    --radius-md:  8px;
+    --radius-lg: 12px;
+    --shadow:    0 1px 5px rgba(0,0,0,.30);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,.45);
+
+    /* Fonts */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+
+    /* Layout */
+    --sidebar-w: 280px;
+    --tab-h:     38px;
+}
+
+/* ======================== Reset ======================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    line-height: 1.5;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ======================== Layout ======================== */
+#app { display: flex; height: 100vh; }
+
+/* ======================== Sidebar ======================= */
+#sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.sidebar-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+}
+.sidebar-header h1 {
+    font-size: 14px; font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: .4px;
+}
+#refresh-btn {
+    background: none; border: none; color: var(--text-secondary);
+    cursor: pointer; font-size: 18px; padding: 4px 8px;
+    border-radius: var(--radius-sm); transition: .2s;
+}
+#refresh-btn:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+
+.sidebar-search { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); }
+.sidebar-search input {
+    width: 100%; padding: 6px 10px;
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-md); color: var(--text-primary);
+    font-family: var(--font-sans); font-size: 12px;
+    outline: none; transition: border-color .2s;
+}
+.sidebar-search input:focus { border-color: var(--border-focus); }
+.sidebar-search input::placeholder { color: var(--text-muted); }
+
+/* ======================== File Tree ===================== */
+.file-tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+.tree-item {
+    display: flex; align-items: center; padding: 4px 8px;
+    cursor: pointer; user-select: none;
+    transition: background .12s; font-size: 12px; gap: 6px;
+}
+.tree-item:hover { background: var(--bg-surface-hover); }
+.tree-icon {
+    font-size: 10px; width: 14px; text-align: center;
+    flex-shrink: 0; color: var(--text-muted); transition: transform .15s;
+}
+.tree-file .tree-icon { font-size: 12px; }
+.tree-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tree-file .tree-name { color: var(--text-secondary); }
+.tree-file:hover .tree-name { color: var(--text-primary); }
+.tree-children { overflow: hidden; }
+.tree-children.collapsed { display: none; }
+
+/* ======================== Main ========================== */
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ======================== Tabs ========================== */
+.tabs {
+    display: flex; background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border);
+    height: var(--tab-h); overflow-x: auto; overflow-y: hidden; flex-shrink: 0;
+    scrollbar-width: thin;
+}
+/* Ensure wheel events convert vertical scroll to horizontal */
+.tabs::-webkit-scrollbar { height: 3px; }
+.tabs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.tab {
+    display: flex; align-items: center; padding: 0 14px; height: 100%;
+    gap: 8px; cursor: pointer;
+    border-right: 1px solid var(--border-subtle);
+    white-space: nowrap; font-size: 12px; color: var(--text-secondary);
+    transition: .2s; position: relative;
+}
+.tab:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+.tab.active {
+    background: var(--bg-primary); color: var(--text-primary);
+}
+.tab.active::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: var(--accent);
+}
+.tab-name { overflow: hidden; text-overflow: ellipsis; }
+.tab-close {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 16px; line-height: 1;
+    padding: 2px; border-radius: 3px; transition: .12s;
+}
+.tab-close:hover { background: var(--error); color: white; }
+
+/* ======================== Editor Area =================== */
+.editor-area {
+    flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px;
+    display: flex; flex-direction: column; gap: 18px;
+    min-height: 0; /* crucial: allows flex child to shrink and scroll */
+}
+.empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%;
+    color: var(--text-muted); text-align: center; gap: 10px;
+}
+.empty-icon { font-size: 52px; opacity: .45; }
+.empty-state h2 { font-size: 20px; font-weight: 500; color: var(--text-secondary); }
+.empty-state p { font-size: 14px; max-width: 440px; }
+.empty-state .hint { font-size: 12px; opacity: .5; margin-top: 8px; }
+
+/* ======================== Proto Cards =================== */
+.proto-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: visible;
+    box-shadow: var(--shadow); transition: border-color .25s;
+    flex-shrink: 0; /* CRITICAL: prevents cards from compressing in flex column */
+}
+.proto-card:hover { border-color: var(--accent); }
+.proto-card.proto-error { border-color: var(--warning); opacity: .8; }
+.proto-card.collapsed .proto-body { display: none; }
+
+.proto-header {
+    display: flex; align-items: center; padding: 6px 12px;
+    background: linear-gradient(135deg, var(--accent-dim), transparent);
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 8px; cursor: pointer; user-select: none;
+}
+.proto-type-badge {
+    background: var(--accent); color: #fff; padding: 2px 10px;
+    border-radius: 999px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px;
+}
+.proto-id-text {
+    font-family: var(--font-mono); font-size: 14px; font-weight: 500;
+    cursor: text;
+}
+.proto-id-text:hover { text-decoration: underline dashed var(--text-muted); text-underline-offset: 3px; }
+.proto-id-input {
+    font-family: var(--font-mono); font-size: 14px; font-weight: 500;
+    background: var(--bg-input); border: 1px solid var(--accent);
+    color: var(--text-primary); padding: 2px 6px; border-radius: var(--radius-sm);
+    width: 250px; outline: none;
+}
+
+/* Abstract prototype styling – NO bg repaint. Instead recolor text:
+   keys turn pinkish, values turn gray, so abstract cards read as
+   "templates / placeholders" without changing the card background. */
+.proto-abstract:hover { border-color: #888; }
+.proto-abstract .field-label,
+.proto-abstract .component-type,
+.proto-abstract .map-key-label {
+    color: #ff79c6; /* pink keys */
+}
+.proto-abstract .field-input,
+.proto-abstract .field-select,
+.proto-abstract .field-input[type="number"],
+.proto-abstract .field-textarea,
+.proto-abstract .toggle-label,
+.proto-abstract .proto-id-text {
+    color: #888; /* gray values */
+}
+
+.proto-abstract-toggle {
+    display: inline-flex; align-items: center; cursor: pointer;
+    gap: 4px; user-select: none;
+    margin-left: 8px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted);
+}
+.proto-abstract-toggle input { margin: 0; cursor: pointer; }
+.proto-abstract-toggle:hover { color: var(--text-primary); }
+.proto-abstract-toggle input:checked ~ .abstract-label { color: var(--accent); font-weight: 600; }
+
+/* Parent sub-header bar */
+.proto-parent-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 12px; background: rgba(88, 166, 255, 0.06);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+}
+
+.proto-body { padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; }
+
+/* ======================== Field Rows ==================== */
+.field-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 4px 0; border-bottom: 1px solid var(--border-subtle);
+    position: relative;
+}
+.field-row:last-child { border-bottom: none; }
+
+/* Inherited (non-local) fields – dimmed via color, not opacity (keeps dropdowns readable) */
+.field-row.inherited { color: var(--text-muted); }
+.field-row.inherited .field-input,
+.field-row.inherited .field-select,
+.field-row.inherited .toggle-label { color: var(--text-muted); }
+.field-row.inherited .field-label { color: var(--text-inherited); font-style: italic; }
+.field-row.inherited .field-label::after {
+    content: ' ↑'; font-size: 9px; color: var(--text-muted);
+    font-style: normal; letter-spacing: .3px;
+}
+
+/* Local (overridden) fields – blue bar on left, bold text */
+.field-row.field-local {
+    padding-left: 2px;
+}
+.field-override-bar {
+    position: absolute; left: -12px; top: 2px; bottom: 2px;
+    width: 3px; background: var(--accent); border-radius: 2px;
+}
+.field-label-bold {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Field control wrapper with reset button */
+.field-control-wrap {
+    flex: 1; min-width: 0;
+    display: flex; align-items: flex-start; gap: 6px;
+}
+.field-control-wrap > .field-control { flex: 1; min-width: 0; }
+
+.field-reset-btn {
+    background: none; border: 1px solid var(--border);
+    color: var(--text-muted); cursor: pointer;
+    font-size: 14px; padding: 4px 6px; line-height: 1;
+    border-radius: var(--radius-sm); transition: .15s;
+    flex-shrink: 0; margin-top: 2px;
+}
+.field-reset-btn:hover { background: var(--warning); color: #000; border-color: var(--warning); }
+
+/* Validation badges (non-blocking client-side checks) */
+.field-row.field-invalid > .field-control-wrap > .field-control { box-shadow: inset 0 0 0 1px var(--error, #e54a4a); }
+.field-row.field-warning > .field-control-wrap > .field-control { box-shadow: inset 0 0 0 1px var(--warning, #d9a14a); }
+.field-validation-badge {
+    position: absolute; right: -4px; top: -4px;
+    width: 16px; height: 16px; line-height: 16px;
+    border-radius: 50%; text-align: center;
+    font-size: 11px; font-weight: 700;
+    cursor: help; user-select: none;
+    pointer-events: auto;
+}
+.field-validation-badge.badge-error   { background: var(--error,   #e54a4a); color: #fff; }
+.field-validation-badge.badge-warning { background: var(--warning, #d9a14a); color: #000; }
+.field-row { position: relative; }
+
+.field-default-placeholder {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+    font-style: italic; cursor: pointer; padding: 4px 8px;
+    border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);
+    transition: border-color .15s, color .15s;
+}
+.field-default-placeholder:hover { border-color: var(--accent); color: var(--accent); }
+
+.field-unsupported-stub {
+    font-family: var(--font-mono); font-size: 11px;
+    background: #3a3416; color: #e0c060;
+    border: 1px dashed #a08a30; border-radius: var(--radius-sm);
+    padding: 6px 10px; user-select: text;
+}
+.field-unsupported-stub b { color: #ffd866; }
+.field-unsupported-raw-btn {
+    margin-left: 10px; padding: 2px 8px;
+    background: #443a1a; color: #ffd866;
+    border: 1px solid #a08a30; border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: 10px; cursor: pointer;
+}
+.field-unsupported-raw-btn:hover { background: #5a4d1f; }
+.field-unsupported-raw { width: 100%; margin-top: 6px; }
+
+/* ──────────────── SoundSpecifier control ──────────────── */
+.sound-specifier-ctrl { display: flex; flex-direction: column; gap: 6px; }
+.sound-mode-tabs { display: flex; gap: 2px; }
+.sound-mode-tab {
+    padding: 3px 12px; font-family: var(--font-mono); font-size: 11px;
+    background: var(--bg-tertiary, #2b2d31); color: var(--text-muted);
+    border: 1px solid var(--border-subtle); border-bottom: none;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    cursor: pointer;
+}
+.sound-mode-tab.active { background: var(--bg-secondary, #232428); color: var(--accent); }
+.sound-mode-tab:hover { color: var(--text-primary); }
+.sound-body { display: flex; flex-direction: column; gap: 6px; }
+.sound-field-row { display: flex; align-items: center; gap: 6px; }
+.sound-input-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+    width: 70px; min-width: 70px;
+}
+.sound-input { flex: 1; }
+.sound-play-btn {
+    width: 28px; height: 28px; padding: 0;
+    background: var(--accent, #58a6ff); color: #fff;
+    border: none; border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 12px;
+}
+.sound-play-btn:disabled { background: #555; cursor: not-allowed; opacity: .6; }
+.sound-params-wrap { margin-top: 4px; }
+.sound-params-toggle {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+    background: none; border: none; cursor: pointer; padding: 2px 0;
+}
+.sound-params-toggle:hover { color: var(--text-primary); }
+.sound-params-host {
+    margin-top: 4px; padding-left: 10px;
+    border-left: 2px solid var(--border-subtle);
+}
+
+.field-required-star {
+    color: var(--error, #e54a4a); font-weight: 700;
+    margin-left: 4px; cursor: help;
+}
+
+.field-label {
+    width: 170px; min-width: 170px;
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--text-secondary); padding-top: 6px; word-break: break-all;
+}
+/* Required marker is rendered by JS as `.field-required-star` so it can carry
+ * a tooltip; the old `::after` pseudo was duplicating it. */
+.field-control { flex: 1; min-width: 0; }
+
+/* ======================== Input Controls ================ */
+.field-input {
+    width: 100%; padding: 6px 10px;
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary);
+    font-family: var(--font-mono); font-size: 12px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.field-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-dim); }
+.field-input:disabled { opacity: .45; cursor: not-allowed; }
+.field-input.error { border-color: var(--error); }
+.number-input { max-width: 200px; }
+
+.field-textarea {
+    width: 100%; padding: 8px 10px;
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary);
+    font-family: var(--font-mono); font-size: 12px;
+    outline: none; resize: vertical; min-height: 60px; transition: border-color .2s;
+}
+.field-textarea:focus { border-color: var(--border-focus); }
+.field-textarea.error { border-color: var(--error); }
+
+.field-select {
+    width: 100%; padding: 6px 10px;
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary);
+    font-family: var(--font-mono); font-size: 12px;
+    outline: none; cursor: pointer;
+}
+.field-select:focus { border-color: var(--border-focus); }
+
+/* Toggle */
+.toggle-switch {
+    position: relative; display: inline-block;
+    width: 40px; height: 22px; cursor: pointer; vertical-align: middle;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute; inset: 0;
+    background: var(--border); border-radius: 22px; transition: background .3s;
+}
+.toggle-slider::before {
+    content: ''; position: absolute;
+    height: 16px; width: 16px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%; transition: transform .3s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+.toggle-label {
+    margin-left: 8px; font-family: var(--font-mono);
+    font-size: 12px; color: var(--text-secondary); vertical-align: middle;
+}
+
+/* Color */
+.color-control { display: flex; gap: 8px; align-items: center; }
+.color-picker {
+    width: 36px; height: 30px; padding: 2px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; background: none;
+}
+.color-text { max-width: 120px; }
+
+/* Vector */
+.vector-control { display: flex; gap: 6px; align-items: center; }
+.vector-axis { display: flex; align-items: center; gap: 2px; }
+.vector-axis-label {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-muted); font-weight: 700;
+    min-width: 12px; text-align: center;
+}
+.vector-input { width: 70px; }
+
+/* ======================== Flags Dropdown ================ */
+.flags-control { position: relative; }
+.flags-toggle {
+    font-family: var(--font-mono); font-size: 12px;
+    background: var(--bg-input); border: 1px solid var(--border-subtle);
+    color: var(--text-primary); padding: 4px 8px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    text-align: left; min-width: 140px; max-width: 300px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.flags-toggle:hover { border-color: var(--accent); }
+.flags-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; z-index: 100;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: var(--shadow);
+    max-height: 200px; overflow-y: auto; min-width: 160px;
+    padding: 4px 0;
+}
+.flags-dropdown.visible { display: block; }
+.flags-option {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px; cursor: pointer; font-family: var(--font-mono);
+    font-size: 12px; color: var(--text-secondary);
+}
+.flags-option:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+.flags-option input[type="checkbox"] { accent-color: var(--accent); }
+
+/* ======================== Sprite Specifier ============== */
+.sprite-specifier-ctrl {
+    display: flex; align-items: flex-start; gap: 10px;
+}
+.sprite-preview {
+    flex-shrink: 0;
+    width: 64px; height: 64px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+}
+.sprite-canvas {
+    image-rendering: pixelated;
+    display: block;
+}
+.sprite-fields { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.sprite-field-row {
+    display: flex; align-items: center; gap: 6px;
+    position: relative;
+}
+.sprite-input-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+    width: 40px; flex-shrink: 0; text-align: right;
+}
+.sprite-input { flex: 1; }
+.sprite-state-dropdown {
+    display: none; position: absolute; top: 100%; left: 46px; right: 0;
+    z-index: 100; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: var(--shadow);
+    max-height: 180px; overflow-y: auto; padding: 2px 0;
+}
+.sprite-state-dropdown.visible { display: block; }
+.sprite-state-option {
+    display: flex; align-items: center; gap: 8px;
+    padding: 3px 8px;
+}
+.sprite-state-thumb {
+    width: 24px; height: 24px; flex: 0 0 24px;
+    image-rendering: pixelated;
+    display: flex; align-items: center; justify-content: center;
+}
+.sprite-state-name { font-family: var(--font-mono); font-size: 12px; }
+
+/* ======================== ResPath Autocomplete ========== */
+.respath-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    z-index: 110; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: var(--shadow);
+    max-height: 200px; overflow-y: auto; padding: 2px 0;
+}
+.respath-dropdown.visible { display: block; }
+.respath-item {
+    padding: 4px 10px; cursor: pointer; font-size: 12px;
+    font-family: var(--font-mono); transition: background .1s;
+}
+.respath-item:hover, .respath-item.selected { background: var(--accent-dim); }
+.respath-dir  { color: var(--text-link); }
+.respath-dir::before  { content: '📁 '; }
+.respath-file::before { content: '📄 '; }
+.respath-file { display: flex; align-items: center; gap: 6px; }
+.respath-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.respath-play-btn {
+    flex-shrink: 0; background: transparent; border: 1px solid var(--border-subtle);
+    color: var(--text); font-size: 10px; line-height: 1;
+    padding: 2px 6px; border-radius: 3px; cursor: pointer;
+    transition: background .1s;
+}
+.respath-play-btn:hover { background: var(--accent-dim); }
+
+/* ======================== Search Dropdown =============== */
+.search-dropdown { position: relative; }
+.dropdown-list {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
+    max-height: 260px; overflow-y: auto; z-index: 100; display: none;
+}
+.dropdown-list.visible { display: block; }
+.dropdown-item {
+    padding: 6px 10px; cursor: pointer;
+    display: flex; gap: 8px; align-items: center; transition: background .1s;
+}
+.dropdown-item:hover, .dropdown-item.selected { background: var(--accent-dim); }
+.dropdown-id { font-family: var(--font-mono); font-size: 12px; }
+.dropdown-name { font-size: 11px; color: var(--text-muted); }
+.dropdown-empty {
+    padding: 12px; text-align: center;
+    color: var(--text-muted); font-size: 12px;
+}
+
+/* ======================== Components ==================== */
+.components-section {
+    margin-top: 14px; border-top: 2px solid var(--border); padding-top: 14px;
+}
+.components-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px; font-size: 12px; font-weight: 700;
+    color: var(--accent-hover); text-transform: uppercase; letter-spacing: .8px;
+}
+.add-component-btn {
+    background: var(--accent-dim); border: 1px solid var(--accent);
+    color: var(--accent); cursor: pointer; font-size: 15px;
+    width: 24px; height: 24px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; transition: .2s;
+}
+.add-component-btn:hover { background: var(--accent); color: #fff; }
+
+.component-card {
+    background: #232428; border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md); margin-bottom: 8px; overflow: visible;
+    transition: border-color .2s; position: relative;
+}
+.component-card:hover { border-color: var(--border); }
+.component-card.inherited { border-style: dashed; color: var(--text-muted); }
+.component-card.inherited .component-header { opacity: .65; }
+.component-card.comp-local { border-left: 3px solid var(--accent); }
+.component-card.collapsed .component-body { display: none; }
+
+.component-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: rgba(255,255,255,.015);
+    cursor: pointer; user-select: none;
+}
+.component-type {
+    font-family: var(--font-mono); font-size: 12px;
+    font-weight: 500; color: var(--accent-hover);
+}
+.component-body { padding: 8px 12px; }
+
+/* ======================== Toasts ======================== */
+#toast-container {
+    position: fixed; bottom: 20px; right: 20px;
+    display: flex; flex-direction: column; gap: 8px; z-index: 1000;
+    pointer-events: none;
+}
+.toast {
+    padding: 8px 18px; border-radius: var(--radius-md);
+    font-size: 12px; font-weight: 500; color: #fff;
+    opacity: 0; transform: translateY(10px) scale(.96);
+    transition: all .3s cubic-bezier(.4,.0,.2,1);
+    box-shadow: var(--shadow-lg); pointer-events: auto;
+}
+.toast.visible { opacity: 1; transform: translateY(0) scale(1); }
+.toast-success { background: var(--success); }
+.toast-error   { background: var(--error); }
+.toast-warning { background: var(--warning); color: #000; }
+.toast-info    { background: var(--info); }
+
+/* ======================== Context Menu ================== */
+.context-menu {
+    position: fixed; z-index: 9999;
+    background: var(--bg-tertiary); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 6px 0;
+    min-width: 180px; box-shadow: var(--shadow-lg);
+    font-size: 13px;
+}
+.context-menu-item {
+    padding: 6px 14px; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text-secondary); transition: background .1s, color .1s;
+}
+.context-menu-item:hover {
+    background: var(--accent); color: #fff;
+    border-radius: 2px; margin: 0 4px; padding-left: 10px; padding-right: 10px;
+}
+.context-menu-item.danger:hover { background: var(--error); }
+.context-menu-sep { height: 1px; background: var(--border); margin: 4px 8px; }
+
+/* ======================== List / Map Editors ============= */
+.list-editor, .map-editor { display: flex; flex-direction: column; gap: 4px; }
+.list-item, .map-entry {
+    display: flex; align-items: flex-start; gap: 6px;
+    padding: 4px 6px; background: var(--bg-surface);
+    border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);
+}
+.list-item:hover, .map-entry:hover { border-color: var(--border); }
+.list-item-content, .map-entry-content { flex: 1; min-width: 0; }
+.map-key-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary);
+    min-width: 80px; padding-top: 5px; word-break: break-all;
+}
+.item-remove-btn, .entry-remove-btn {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 14px; padding: 3px 6px;
+    border-radius: var(--radius-sm); transition: .15s; flex-shrink: 0;
+}
+.item-remove-btn:hover, .entry-remove-btn:hover { background: var(--error); color: #fff; }
+.list-add-row, .map-add-row {
+    display: flex; gap: 6px; align-items: center; margin-top: 2px;
+}
+.list-add-btn, .map-add-btn {
+    background: var(--accent-dim); border: 1px solid var(--accent);
+    color: var(--accent); cursor: pointer; font-size: 12px;
+    padding: 3px 10px; border-radius: var(--radius-sm);
+    font-family: var(--font-sans); transition: .2s;
+}
+.list-add-btn:hover, .map-add-btn:hover { background: var(--accent); color: #fff; }
+
+/* Drag-and-drop reorder handles for list items */
+.list-item .drag-handle {
+    cursor: grab; color: var(--text-muted); user-select: none;
+    font-size: 14px; padding: 2px 4px; flex-shrink: 0;
+    line-height: 1; border-radius: var(--radius-sm);
+}
+.list-item .drag-handle:hover { color: var(--text); background: var(--bg-default); }
+.list-item .drag-handle:active { cursor: grabbing; }
+.list-item.dragging { opacity: 0.5; }
+.list-item.drop-target { border-color: var(--accent); background: var(--accent-dim); }
+
+/* Map key host – sized so search dropdowns/enums render comfortably */
+.map-key-host { min-width: 160px; max-width: 260px; flex-shrink: 0; }
+.map-key-host .field-control { width: 100%; }
+.map-key-host .field-input { width: 100%; box-sizing: border-box; }
+
+/* DataDefinition inline */
+.datadef-inline {
+    padding: 6px 8px; background: var(--bg-surface);
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; gap: 3px;
+}
+.datadef-inline .field-row { padding: 4px 0; }
+
+/* Polymorphic !type: selector at the top of a dataDefCtrl */
+.datadef-type-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0 6px 0; border-bottom: 1px dashed var(--border-subtle);
+    margin-bottom: 4px;
+}
+.datadef-type-label {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted); flex-shrink: 0;
+}
+.datadef-type-row .field-input { max-width: 240px; }
+.datadef-type-btn {
+    background: var(--bg-surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 4px 10px; font-family: var(--font-mono); font-size: 12px;
+    cursor: pointer; min-width: 140px; text-align: left;
+}
+.datadef-type-btn:hover { background: var(--accent-dim); border-color: var(--accent); }
+
+/* ======================== Searchable Type Picker Popup ======== */
+.searchable-picker-popup {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-lg);
+    padding: 6px; display: flex; flex-direction: column; gap: 4px;
+    max-width: 480px;
+}
+.searchable-picker-popup .field-input { width: 100%; box-sizing: border-box; }
+.searchable-picker-list {
+    max-height: 320px; overflow-y: auto;
+    background: var(--bg-default); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+}
+
+/* Add-prototype footer */
+.add-proto-footer {
+    display: flex; gap: 10px; align-items: center;
+    padding: 16px 0; flex-shrink: 0;
+}
+.add-proto-btn {
+    background: var(--accent); border: none; color: #fff;
+    padding: 7px 18px; border-radius: var(--radius-sm);
+    cursor: pointer; font-weight: 600; font-size: 12px;
+    font-family: var(--font-sans); transition: .2s; white-space: nowrap;
+}
+.add-proto-btn:hover { background: var(--accent-hover); }
+
+/* Delete prototype button */
+.delete-proto-btn {
+    background: none; border: none; color: var(--error);
+    font-size: 20px; cursor: pointer; padding: 0 6px; line-height: 1;
+    margin-left: auto; transition: opacity .15s; opacity: .7;
+}
+.delete-proto-btn:hover { opacity: 1; }
+
+/* ======================== Modal ========================= */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); z-index: 9000;
+    display: flex; align-items: center; justify-content: center;
+}
+.modal {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-md); width: 440px; max-height: 70vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+}
+.modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { margin: 0; font-size: 15px; color: var(--text-primary); }
+.modal-close {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 14px 18px; overflow-y: auto; min-height: 0; }
+.modal-search {
+    width: 100%; box-sizing: border-box; margin-bottom: 10px;
+}
+.modal-list {
+    max-height: 45vh; overflow-y: auto;
+}
+.modal-list-item {
+    padding: 7px 12px; cursor: pointer; border-radius: var(--radius-sm);
+    color: var(--text-primary); font-size: 13px; font-family: var(--font-mono);
+}
+.modal-list-item:hover { background: var(--bg-surface-hover); }
+.dropdown-empty {
+    padding: 12px; color: var(--text-muted); text-align: center; font-size: 13px;
+}
+
+/* ======================== Responsive ==================== */
+@media (max-width: 900px) { :root { --sidebar-w: 220px; } }
+
+/* ====================================================================== */
+/*  YAML-EDITOR LOOK  ▪︎  Phase H                                          */
+/*  Re-skins the prototype editor area to resemble a YAML text editor:    */
+/*    – monospaced typography everywhere                                  */
+/*    – flat code-block surface (no card chrome)                          */
+/*    – syntax-coloured keys / punctuation / values                       */
+/*    – YAML-style indentation via padding-left on nested containers      */
+/*    – list items prefixed with "- " bullet                              */
+/*    – inherited rows are dimmed (opacity 0.5) but keep their colours    */
+/*    – add/reset icons fade in only on row hover                         */
+/* ====================================================================== */
+
+:root {
+    --yaml-key:        #c3e88d;   /* soft green  – field keys             */
+    --yaml-key-comp:   #c792ea;   /* magenta     – component / proto keys */
+    --yaml-punct:      #5a6a8c;   /* dim slate   – ':' '-' '!' brackets   */
+    --yaml-string:     #82aaff;   /* cyan-blue   – string scalars         */
+    --yaml-number:     #f78c6c;   /* orange      – numeric scalars        */
+    --yaml-bool:       #ff5370;   /* pink        – bool scalars           */
+    --yaml-tag:        #ffcb6b;   /* amber       – !type tags             */
+    --yaml-comment:    #546e7a;   /* greyed      – # comments / hints     */
+    --yaml-indent:     2ch;       /* 1 level of YAML indentation          */
+}
+
+/* ── 1.  Card surface → flat code block ─────────────────────────────── */
+.proto-card {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    box-shadow: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.55;
+}
+.proto-card:hover { border-color: var(--border); }
+.proto-header {
+    display: flex; flex-direction: column;
+    /* CRITICAL: base rule sets `align-items: center` which, combined with
+       flex-direction: column, horizontally centers every child (type-line,
+       id-row, abstract-row, parent-bar). We need them flush left. */
+    align-items: stretch;
+    justify-content: flex-start;
+    background: transparent;
+    border-bottom: 1px dashed var(--border-subtle);
+    font-family: var(--font-mono);
+    padding: 4px 12px;
+    cursor: default;
+    gap: 0;
+}
+.proto-type-line {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    padding: 1px 0;
+}
+.proto-type-line .delete-proto-btn {
+    /* No margin-left:auto — stick the × right after the type name, like
+       reset buttons on field-rows do, not flung to the far right. */
+    margin-left: 4px;
+    opacity: 0;
+    transition: opacity .15s;
+}
+.proto-type-line:hover .delete-proto-btn { opacity: 1; }
+.proto-type-badge {
+    background: transparent;
+    color: var(--yaml-key-comp);
+    padding: 0;
+    border-radius: 0;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 13px;
+    font-family: var(--font-mono);
+}
+.proto-type-badge::before { content: '- type: '; color: var(--yaml-punct); font-weight: 400; }
+
+/* id/abstract sub-rows sit inside .proto-header (sticky during collapse).
+   They inherit .field-row look from section 2 below. The label text "id"
+   itself is the YAML key, so we DON'T add a "id: " ::before on .proto-id-text.
+   !important is needed because `.field-row.field-local { padding-left: 0 }`
+   in section 2 has equal specificity and would otherwise reset the indent. */
+.field-row.proto-id-row,
+.field-row.proto-abstract-row { padding-left: var(--yaml-indent) !important; }
+.proto-parent-bar { padding-left: var(--yaml-indent) !important; }
+.proto-id-text { font-size: 13px; color: var(--yaml-string); font-family: var(--font-mono); cursor: text; }
+.proto-id-text::before { content: ''; }
+.proto-id-text:hover { text-decoration: underline dashed var(--text-muted); text-underline-offset: 3px; }
+.proto-abstract-row .proto-abstract-toggle {
+    margin-left: 0; font-size: 13px; gap: 4px;
+}
+.proto-abstract-row .toggle-label { color: var(--yaml-key); }
+
+.proto-parent-bar {
+    background: transparent;
+    border-bottom: none;
+    padding: 0;
+    padding-left: var(--yaml-indent);
+}
+.proto-body {
+    padding: 2px 12px 8px;
+    padding-left: calc(12px + var(--yaml-indent));
+    gap: 0;
+}
+
+/* ── 2.  Field rows → single YAML line ──────────────────────────────── */
+.field-row {
+    display: flex; align-items: baseline; gap: 0;
+    padding: 1px 0;
+    border-bottom: none;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 22px;
+    flex-wrap: wrap;
+}
+.field-row .field-label {
+    color: var(--yaml-key);
+    font-style: normal;
+    font-weight: 400;
+    /* CRITICAL: kill the 170px column-width from the base .field-label rule
+       so the value sits flush after "key: " like real YAML. */
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 0;
+    padding-top: 0;
+    flex-shrink: 0;
+    font-size: 13px;
+}
+.field-row .field-label::after {
+    content: ': ';
+    color: var(--yaml-punct);
+    font-weight: 400;
+}
+.field-row.inherited {
+    opacity: 0.5;
+    color: inherit;
+}
+.field-row.inherited .field-label {
+    color: var(--yaml-key);
+    font-style: normal;
+}
+.field-row.inherited .field-label::after {
+    content: ': ';
+    color: var(--yaml-punct);
+}
+.field-row.inherited .field-input,
+.field-row.inherited .field-select,
+.field-row.inherited .toggle-label {
+    color: inherit;
+}
+.field-row.field-local { padding-left: 0; }
+.field-row.field-local .field-label { font-weight: 700; }
+/* Override-bar – keep the blue marker so locally-edited fields are spottable */
+.field-row .field-override-bar {
+    position: absolute;
+    left: -8px; top: 2px; bottom: 2px;
+    width: 2px; background: var(--accent); border-radius: 1px;
+    display: block;
+}
+
+.field-control-wrap {
+    /* No flex:1 — value width fits its own content (real YAML look) */
+    display: inline-flex; align-items: baseline; gap: 4px;
+    flex: 0 1 auto; min-width: 0;
+}
+.field-row > .field-control-wrap > .field-control { flex: 0 1 auto; }
+.field-row .field-input,
+.field-row .field-select {
+    /* width:auto + field-sizing:content makes the input fit its value
+       like a normal text run — but with a comfy minimum so typing doesn't
+       feel cramped. min-width replaces the old fixed widths that clipped
+       longer text. */
+    width: auto;
+    field-sizing: content; /* Chromium/Edge: input shrinks/grows with content */
+    min-width: 18ch;
+    max-width: 100%;
+}
+.field-row .field-input[type="number"] { min-width: 6ch; max-width: 12ch; }
+.field-row .field-input[type="text"] { min-width: 18ch; }
+
+/* When the value is a multi-line block container (list / map / nested data /
+   textarea), wrap it onto its OWN line below the key, indented one YAML step.
+   This mirrors block-style YAML:
+       key:
+         - item
+         - item
+*/
+.field-row > .field-control-wrap:has(.list-editor),
+.field-row > .field-control-wrap:has(.map-editor),
+.field-row > .field-control-wrap:has(.datadef-inline),
+.field-row > .field-control-wrap:has(.field-textarea),
+.field-row > .field-control-wrap:has(.entries-list),
+.field-row > .field-control-wrap:has(.list-items),
+.field-row > .field-control-wrap:has(.sprite-specifier-ctrl),
+.field-row > .field-control-wrap:has(.sprite-preview) {
+    flex-basis: 100%;
+    padding-left: var(--yaml-indent);
+    margin-top: 1px;
+}
+.field-row:has(> .field-control-wrap > .list-editor),
+.field-row:has(> .field-control-wrap > .map-editor),
+.field-row:has(> .field-control-wrap > .datadef-inline),
+.field-row:has(> .field-control-wrap > .field-textarea),
+.field-row:has(> .field-control-wrap > .entries-list),
+.field-row:has(> .field-control-wrap > .list-items),
+.field-row:has(.sprite-specifier-ctrl),
+.field-row:has(.sprite-preview) {
+    /* Stay row-aligned at top so the key sits on its own line and the
+       block container drops below. */
+    align-items: flex-start;
+}
+
+/* ── 3.  Scalar controls → inline YAML-value look ───────────────────── */
+.field-row .field-input,
+.field-row .field-select {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 0 4px;
+    color: var(--yaml-string);
+    min-height: 20px;
+    box-shadow: none;
+    border-radius: 2px;
+}
+.field-row .field-input:hover,
+.field-row .field-select:hover {
+    border-color: var(--border-subtle);
+    background: var(--bg-card);
+}
+.field-row .field-input:focus,
+.field-row .field-select:focus {
+    border-color: var(--accent);
+    background: var(--bg-card);
+    outline: none;
+}
+.field-row .field-input[type="number"] { color: var(--yaml-number); }
+.field-row .field-select { color: var(--yaml-tag); }
+.field-row .toggle-label { color: var(--yaml-key); font-family: var(--font-mono); }
+
+/* ── 4.  Reset & remove icons → hover-only ─────────────────────────── */
+.field-reset-btn,
+.item-remove-btn,
+.entry-remove-btn {
+    opacity: 0;
+    transition: opacity .15s ease;
+    background: transparent;
+    border: 1px solid transparent;
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--text-muted);
+}
+.field-row:hover .field-reset-btn,
+.list-item:hover .item-remove-btn,
+.map-entry:hover .entry-remove-btn,
+.field-row:focus-within .field-reset-btn,
+.component-card:hover .component-header .field-reset-btn,
+.component-header:hover .field-reset-btn { opacity: 1; }
+.field-reset-btn:hover { background: var(--warning); color: #000; border-color: var(--warning); }
+.item-remove-btn:hover, .entry-remove-btn:hover { background: var(--error); color: #fff; }
+
+/* ── 5.  Lists & maps → YAML "- " bullets, indent, no card chrome ──── */
+.list-editor, .map-editor {
+    display: flex; flex-direction: column;
+    gap: 0;
+    padding-left: var(--yaml-indent);
+    width: 100%;
+}
+.list-item, .map-entry {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0;
+    padding: 1px 0;
+    /* flex-start so the dash & drag handle sit at the TOP of tall block
+       items (datadef, nested list/map, sprite-specifier) instead of being
+       vertically centered against the giant child. */
+    align-items: flex-start;
+    gap: 4px;
+    min-height: 22px;
+    position: relative;
+}
+.list-item::before, .map-entry::before {
+    content: '- ';
+    color: var(--yaml-punct);
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+}
+/* List items only: reorder children so the drag handle sits FIRST,
+   then the YAML dash, then the content. Map entries keep their natural
+   DOM order (`- key: value`) because they have no drag handle and the
+   key label must immediately follow the dash. */
+.list-item::before { order: 1; }
+.list-item .list-item-content { order: 2; flex: 1 1 auto; min-width: 0; }
+.list-item:hover, .map-entry:hover {
+    background: rgba(88, 166, 255, 0.04);
+    border-color: transparent;
+}
+.list-item .drag-handle,
+.map-entry .drag-handle {
+    opacity: 0;
+    transition: opacity .15s ease;
+    color: var(--text-muted);
+    padding: 0 2px;
+    order: 0;          /* first child in visual order */
+    align-self: flex-start;
+    line-height: 1.5;
+    cursor: grab;
+}
+.list-item:hover .drag-handle,
+.map-entry:hover .drag-handle { opacity: 0.6; }
+
+/* Remove buttons stick to the END of the row (just like field-reset),
+   not glued next to the drag handle. */
+.list-item .item-remove-btn,
+.map-entry .entry-remove-btn {
+    order: 9;
+    margin-left: auto;
+    align-self: flex-start;
+}
+
+.list-add-row, .map-add-row {
+    padding-left: var(--yaml-indent);
+    margin-top: 2px;
+}
+.list-add-btn, .map-add-btn {
+    background: transparent;
+    border: 1px dashed var(--border-subtle);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    font-style: italic;
+}
+.list-add-btn:hover, .map-add-btn:hover {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-style: solid;
+    border-color: var(--accent);
+}
+.list-add-btn::before, .map-add-btn::before { content: '# '; color: var(--yaml-comment); }
+
+.map-key-label {
+    color: var(--yaml-key);
+    font-style: normal;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 0;
+    min-width: 0;
+}
+.map-key-label::after { content: ': '; color: var(--yaml-punct); }
+
+/* ── 6.  DataDefinition inline → indent + tag colour ───────────────── */
+.datadef-inline {
+    padding: 0;
+    padding-left: var(--yaml-indent);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    display: flex; flex-direction: column;
+    gap: 0;
+}
+.datadef-inline .field-row { padding: 1px 0; }
+.datadef-type-row {
+    padding: 0;
+    border-bottom: none;
+    margin-bottom: 0;
+    align-items: center;
+    gap: 4px;
+}
+.datadef-type-label {
+    color: var(--yaml-punct);
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+.datadef-type-label::after { content: ''; }
+.datadef-type-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--yaml-tag);
+    padding: 0 4px;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+}
+.datadef-type-btn::before { content: '!type:'; color: var(--yaml-punct); margin-right: 2px; }
+.datadef-type-btn:hover { background: var(--bg-card); border-color: var(--border-subtle); }
+
+/* ── 7.  Components section → YAML "components:" key + indent ──────── */
+.components-section {
+    margin-top: 6px;
+    padding-top: 0;
+    border-top: none;
+    padding-left: 0;
+}
+.components-header {
+    margin-bottom: 0;
+    padding: 1px 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--yaml-key-comp);
+    text-transform: none;
+    letter-spacing: 0;
+    justify-content: flex-start;
+    gap: 6px;
+}
+.components-header > span::after { content: ':'; color: var(--yaml-punct); }
+.add-component-btn {
+    width: 18px; height: 18px;
+    background: transparent;
+    border: 1px dashed var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity .15s;
+}
+.components-section:hover .add-component-btn { opacity: 1; }
+.add-component-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); border-style: solid; }
+
+/* Each component → YAML "- type: Foo" entry with indented field rows */
+.component-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding-left: var(--yaml-indent);
+    position: relative;
+}
+.component-card:hover { border-color: transparent; }
+.component-card.inherited { border: none; opacity: 0.5; color: inherit; }
+.component-card.inherited .component-header { opacity: 1; }
+.component-card.comp-local { border-left: none; }
+.component-header {
+    padding: 1px 0;
+    background: transparent;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    gap: 6px;
+    justify-content: flex-start;
+}
+.component-header::before {
+    content: '- type: ';
+    color: var(--yaml-punct);
+    font-family: var(--font-mono);
+}
+.component-type {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--yaml-tag);
+}
+.component-header .field-reset-btn {
+    /* Same as proto delete-btn: glue × right after the component name. */
+    margin-left: 4px;
+}
+.component-body {
+    padding: 0;
+    padding-left: var(--yaml-indent);
+}
+
+/* ── 8.  Placeholder for unset defaults → YAML comment look ────────── */
+.field-default-placeholder {
+    border: none;
+    padding: 0 4px;
+    background: transparent;
+    color: var(--yaml-comment);
+    font-style: italic;
+    font-size: 13px;
+    font-family: var(--font-mono);
+}
+.field-default-placeholder::before { content: '# '; }
+.field-default-placeholder:hover { color: var(--accent); border: none; }
+
+/* ── 9.  Field validation badges keep working ──────────────────────── */
+.field-row.field-invalid > .field-control-wrap > .field-control,
+.field-row.field-warning > .field-control-wrap > .field-control {
+    box-shadow: none;
+}
+.field-row.field-invalid .field-input,
+.field-row.field-invalid .field-select { border-color: var(--error, #e54a4a); }
+.field-row.field-warning .field-input,
+.field-row.field-warning .field-select { border-color: var(--warning, #d9a14a); }
+
+/* ── 10. Dropdowns/pickers must float above every nested card ──────── */
+.dropdown-list,
+.search-dropdown .dropdown-list,
+.searchable-picker-popup {
+    z-index: 5000 !important;
+}
+/* Ensure stacking contexts of nested containers don't trap absolutes.
+   .proto-card, .component-card, .list-item, .datadef-inline must not create
+   their own opaque stacking context that clips dropdowns. */
+.proto-card, .component-card, .list-item, .map-entry, .datadef-inline,
+.field-control-wrap, .field-row { overflow: visible; }
+
+/* ── 11. Theme reshuffle: editor area dark (--bg-tertiary = #1e1f22),
+   cards FULLY transparent. The sidebar (file tree + search) is bumped to
+   a lighter shade so the file browser visibly contrasts with the dark
+   editor; the search input gets one more step of brightness so it pops. */
+.editor-area {
+    background: var(--bg-tertiary); /* #1e1f22 — darkest */
+}
+#sidebar {
+    background: #2b2d31; /* lighter than editor */
+}
+.proto-card {
+    background: transparent;
+    box-shadow: none;
+    border-color: var(--border-subtle);
+}
+.proto-card:hover { border-color: var(--accent); }
+.sidebar-search {
+    background: #2b2d31; /* inherits sidebar tone */
+}
+.sidebar-search input {
+    background: #34363c; /* one more step lighter — the only active input */
+}
+.file-tree {
+    background: #2b2d31;
+}
+
+/* ── 12. Slimmer YAML-mode toggle so bool fields don't bloat line height ─ */
+.field-row .toggle-switch {
+    width: 26px; height: 14px;
+}
+.field-row .toggle-slider { border-radius: 14px; }
+.field-row .toggle-slider::before {
+    width: 10px; height: 10px; left: 2px; bottom: 2px;
+}
+.field-row .toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(12px);
+}
+.field-row .toggle-label { margin-left: 4px; }
+
+/* ── 13. Collapsed component → show "…" so the user sees there's content
+   hidden behind the header line. Placed right after the component name. */
+.component-card.collapsed .component-header::after {
+    content: ' …';
+    color: var(--yaml-comment);
+    font-family: var(--font-mono);
+    font-style: italic;
+    font-size: 13px;
+    margin-left: 4px;
+}
+
+/* ── 14. Color field polish ──────────────────────────────────────────
+   The text value comes first (YAML token), the colored square is the
+   accessory on the right. Slimmer swatch, dark color-scheme so the
+   native picker popup uses the dark theme. */
+.color-control {
+    color-scheme: dark;
+    align-items: baseline;
+    gap: 4px;
+}
+.color-text {
+    order: 0;
+    max-width: 14ch;
+    field-sizing: content;
+}
+.color-picker {
+    order: 1;
+    width: 16px; height: 16px;
+    min-width: 16px;
+    padding: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    flex-shrink: 0;
+    align-self: center;
+}
+.color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.color-picker::-webkit-color-swatch { border: none; border-radius: 2px; }
+
+/* ======================== Setup Overlay (standalone mode) ============== */
+.setup-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
+}
+.setup-card {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-lg, 8px); padding: 36px 40px;
+    width: 460px; max-width: 92vw;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+.setup-logo {
+    font-size: 48px; line-height: 1;
+    color: var(--accent); margin-bottom: 12px;
+}
+.setup-title {
+    font-size: 20px; font-weight: 600;
+    color: var(--text); margin: 0 0 10px 0;
+}
+.setup-desc {
+    color: var(--text-secondary); font-size: 13px;
+    line-height: 1.5; margin: 0 0 20px 0;
+}
+.setup-desc code {
+    background: var(--bg-tertiary); padding: 1px 6px;
+    border-radius: var(--radius-sm); font-family: var(--font-mono);
+    font-size: 12px; color: var(--accent-hover);
+}
+.setup-input-row {
+    display: flex; gap: 8px; margin-bottom: 12px;
+}
+.setup-input {
+    flex: 1; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 8px 12px;
+    color: var(--text); font-family: var(--font-mono); font-size: 13px;
+    outline: none; transition: border-color .15s;
+}
+.setup-input:focus { border-color: var(--border-focus); }
+.setup-btn {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: var(--radius-md); padding: 8px 22px;
+    font-weight: 600; font-size: 13px; cursor: pointer;
+    transition: background .15s;
+}
+.setup-btn:hover:not(:disabled) { background: var(--accent-hover, var(--accent)); }
+.setup-btn:disabled { opacity: .55; cursor: progress; }
+.setup-status {
+    font-size: 12px; padding: 8px 10px;
+    border-radius: var(--radius-sm); margin-bottom: 10px;
+    text-align: left; min-height: 0; display: none;
+}
+.setup-status.info    { background: var(--bg-tertiary); color: var(--text-secondary); display: block; }
+.setup-status.error   { background: rgba(229,74,74,.15); color: var(--error); display: block; }
+.setup-status.success { background: rgba(60,180,90,.15); color: var(--success); display: block; }
+.setup-hint {
+    font-size: 11px; color: var(--text-muted);
+    margin: 14px 0 0 0;
+}
+
+/* ======================== Setup Overlay History List ================== */
+.setup-history {
+    margin-bottom: 10px;
+    text-align: left;
+}
+.setup-history-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--text-muted); margin-bottom: 4px; padding-left: 2px;
+}
+.setup-history-item {
+    display: flex; align-items: center;
+    background: var(--bg-tertiary); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm); padding: 5px 6px 5px 10px;
+    margin-bottom: 3px; cursor: pointer;
+    transition: border-color .12s, background .12s;
+}
+.setup-history-item:hover { background: var(--bg-surface); border-color: var(--border); }
+.setup-history-path {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);
+}
+.setup-history-item:hover .setup-history-path { color: var(--text); }
+.setup-history-remove {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 16px; line-height: 1; padding: 0 4px;
+    cursor: pointer; border-radius: var(--radius-sm);
+    transition: color .12s, background .12s; flex-shrink: 0;
+}
+.setup-history-remove:hover { background: var(--error); color: #fff; }

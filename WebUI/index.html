@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SS14 Prototype Redactor</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h1>⚛ SS14 Redactor</h1>
+                <button id="refresh-btn" title="Refresh file tree &amp; index">&#x21bb;</button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="file-search" placeholder="Search files & prototype IDs…" spellcheck="false">
+            </div>
+            <div id="file-tree" class="file-tree"></div>
+        </aside>
+
+        <main id="main">
+            <div id="tabs" class="tabs"></div>
+            <div id="editor-area" class="editor-area">
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h2>SS14 Prototype Redactor</h2>
+                    <p>Open a YAML file from the sidebar to start editing prototypes visually.</p>
+                    <p class="hint">Ctrl+Z / Ctrl+Y — undo / redo &nbsp;&bull;&nbsp; Ctrl+S — force save</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- Setup overlay: shown when no SS14 project is configured yet -->
+    <div id="setup-overlay" class="setup-overlay" style="display:none">
+        <div class="setup-card">
+            <div class="setup-logo">⚛</div>
+            <h1 class="setup-title">SS14 Prototype Redactor</h1>
+            <p class="setup-desc">Enter the path to your SS14 project folder to begin.<br>
+                The project must be built first — run <code>dotnet build</code> in it.</p>
+            <div class="setup-input-row">
+                <input type="text" id="setup-path" class="setup-input"
+                       placeholder="C:\repos\my-ss14-fork" spellcheck="false" autocomplete="off">
+                <button id="setup-open-btn" class="setup-btn">Open</button>
+            </div>
+            <div id="setup-history" class="setup-history"></div>
+            <div id="setup-status" class="setup-status"></div>
+            <p class="setup-hint">
+                Last used path is remembered automatically.
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"
+            integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Modular JS – loaded in dependency order -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/yaml.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/context-menu.js"></script>
+    <script src="js/inheritance.js"></script>
+    <script src="js/sprite-renderer.js"></script>
+    <script src="js/validation.js"></script>
+    <script src="js/field-controls-paths.js"></script>
+    <script src="js/field-controls-collections.js"></script>
+    <script src="js/fields.js"></script>
+    <script src="js/tabs.js"></script>
+    <script src="js/file-tree.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/init.js"></script>
+</body>
+</html>

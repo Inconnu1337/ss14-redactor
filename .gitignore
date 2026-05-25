@@ -1,0 +1,26 @@
+# Build outputs
+bin/
+obj/
+
+# .NET / Rider / Visual Studio
+*.user
+*.suo
+*.DotSettings.user
+.vs/
+.idea/
+*.swp
+
+# Published binaries and release packages
+publish/
+*.zip
+*.tar.gz
+
+# Runtime-generated metadata cache written by the tool into target SS14 projects
+# (not part of this repo)
+metadata.json
+
+# macOS
+.DS_Store
+
+# Windows thumbnails
+Thumbs.db

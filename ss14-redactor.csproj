@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ss14-redactor</AssemblyName>
+    <RootNamespace>Content.Redactor</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Keep output flat: bin/ss14-redactor[.exe] -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <OutputPath>bin\</OutputPath>
+    <Nullable>enable</Nullable>
+    <LangVersion>14</LangVersion>
+    <!-- Self-contained single-file publish profiles -->
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="9.0.1" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+  <!-- Embed the entire static web UI so the binary is self-contained.
+       The WebUI/ folder is excluded from compilation as C# files. -->
+  <ItemGroup>
+    <EmbeddedResource Include="WebUI\**\*">
+      <Link>WebUI\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- WebUI files are resources, not source -->
+  <ItemGroup>
+    <None Remove="WebUI\**\*" />
+    <Compile Remove="WebUI\**\*" />
+  </ItemGroup>
+</Project>
