@@ -3,6 +3,11 @@
 A standalone visual editor for [Space Station 14](https://github.com/space-wizards/space-station-14) prototype YAML files.  
 Works with **any SS14 fork** — just point it at your project folder.
 
+> [!WARNING]
+> The tool is not yet ready for full use; it contains a large number of bugs and has many features that have not yet been implemented
+
+<img width="988" height="807" alt="image" src="https://github.com/user-attachments/assets/52efefa6-2e1a-44ef-89bc-5fb1c10d46f0" />
+
 ---
 
 ## What it does
@@ -58,8 +63,6 @@ Requires [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
 
 4. **Edit prototypes** — the file tree on the left shows all YAML files under `Resources/Prototypes/`. Click a file to open it, edit fields in the visual form on the right, save with **Ctrl+S**.
 
-The last used project path is remembered — next time you open the editor it skips the setup screen.
-
 ---
 
 ## CLI usage
@@ -76,39 +79,3 @@ ss14-redactor extract [path]          # extract metadata.json without starting t
 
 The tool uses `System.Reflection.MetadataLoadContext` to read the compiled game DLLs **without executing any game code**. This makes it safe and fast to load.  
 The web UI is embedded inside the binary as resources, so there are no external dependencies at runtime.
-
----
-
-## Releases and GitHub Actions
-
-The [`.github/workflows/release.yml`](.github/workflows/release.yml) workflow builds binaries for all supported platforms.
-
-### Creating a release (tag push)
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-This triggers a 3-platform matrix build (win-x64, linux-x64, osx-arm64). When all builds pass, a GitHub Release is created automatically with the binaries attached.
-
-### Manual build via Actions tab (no release)
-
-Go to **Actions → Release → Run workflow** and click **Run workflow**.
-
-This builds all 3 platforms and uploads the artifacts so you can download and test them — but does **not** create a GitHub Release. The `Create GitHub Release` step is intentionally skipped for manual runs because `github.ref` points to a branch, not a version tag.
-
-> **Summary:** Tag push → builds + Release. Manual dispatch → builds only (useful for CI checks before tagging).
-
----
-
-## Development
-
-For live UI editing without recompiling, run with `dotnet run` — the server checks for a `WebUI/` folder next to the binary first and serves files directly from disk, bypassing embedded resources. Edit JS/CSS and reload the browser.
-
-```
-ss14-redactor/
-  WebUI/          ← edit JS/CSS/HTML here during development
-  *.cs            ← C# source (server, API, metadata extractor)
-  ss14-redactor.csproj
-```
