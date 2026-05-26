@@ -401,6 +401,41 @@ function mapCtrl(val, meta, dis, onChange) {
 }
 
 // ======================== DATADEFINITION EDITOR =========================
+
+// Attempt to infer a concrete subtype from the keys present in a tag-less
+// polymorphic object. Used for types with custom TypeSerializers that allow
+// shorthand notation without an explicit !type: tag (e.g. EntityTableSelector
+// where a mapping containing `id:` is implicitly an EntSelector).
+//
+// Algorithm: among all implementors of `baseType`, find the one(s) whose
+// declared DataFields cover *all* keys in `presentKeys`. When multiple
+// implementors match, return the one with the fewest total fields (most
+// specific). Returns null when the inference is ambiguous or impossible.
+function _inferConcreteType(baseType, presentKeys) {
+    const impls = state.metadata?.polymorphicTypes?.[baseType];
+    if (!impls || impls.length === 0) return null;
+
+    let best = null;
+    let bestFieldCount = Infinity;
+    let ambiguous = false;
+
+    for (const fullType of impls) {
+        const meta = state.metadata?.dataDefinitions?.[fullType];
+        if (!meta?.fields) continue;
+        const fieldTags = new Set(meta.fields.map(f => f.tag));
+        if (presentKeys.every(k => fieldTags.has(k))) {
+            if (meta.fields.length < bestFieldCount) {
+                best = fullType;
+                bestFieldCount = meta.fields.length;
+                ambiguous = false;
+            } else if (meta.fields.length === bestFieldCount) {
+                ambiguous = true;
+            }
+        }
+    }
+    return ambiguous ? null : best;
+}
+
 function dataDefCtrl(val, ddType, dis, onChange) {
     const obj = (val && typeof val === 'object') ? { ...val } : {};
     // Nested objects start collapsed by the same rules as proto/component
@@ -429,6 +464,19 @@ function dataDefCtrl(val, ddType, dis, onChange) {
         const matched = impls.find(fn => fn === tag || fn.endsWith('.' + tag) || fn.split('.').pop() === tag);
         if (matched) effectiveType = matched;
         else if (state.metadata?.dataDefinitions?.[tag]) effectiveType = tag;
+    } else {
+        // ── Tag-less shorthand inference ─────────────────────────────
+        // Some types use a custom TypeSerializer that bypasses !type: for
+        // common cases (e.g. EntityTableSelector: a mapping with an `id`
+        // key is implicitly an EntSelector without any !type: tag).
+        // When no tag is present, try to identify the concrete subtype by
+        // finding the unique implementor whose declared fields cover all
+        // keys present in the object.
+        const keys = Object.keys(obj).filter(k => !k.startsWith('__'));
+        if (keys.length > 0) {
+            const inferred = _inferConcreteType(ddType, keys);
+            if (inferred) effectiveType = inferred;
+        }
     }
 
     const ddMeta = state.metadata?.dataDefinitions?.[effectiveType];
