@@ -6,8 +6,7 @@ Works with **any SS14 fork** — just point it at your project folder.
 > [!WARNING]
 > The tool is not yet ready for full use; it contains a large number of bugs and has many features that have not yet been implemented
 
-<img width="1006" height="605" alt="image" src="https://github.com/user-attachments/assets/ddd65bf1-a847-4add-8662-6dce6246d469" />
-<img width="759" height="815" alt="image" src="https://github.com/user-attachments/assets/a57eea99-3874-4101-a863-b3fdcc9890b2" />
+<img width="1919" height="747" alt="image" src="https://github.com/user-attachments/assets/f5e92e61-f329-4c3c-aba2-64ea7705eac7" />
 
 ---
 
