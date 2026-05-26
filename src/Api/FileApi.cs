@@ -57,7 +57,9 @@ internal sealed partial class ApiRouter
             content = content.Replace("\r\n", "\n").Replace("\r", "\n");
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
             ctx.FileWatcher.SuppressNext(fullPath);
-            await File.WriteAllTextAsync(fullPath, content, new UTF8Encoding(false));
+            // Write bytes directly to guarantee LF (0x0A) on disk — bypasses
+            // StreamWriter which may convert \n to \r\n on Windows.
+            await File.WriteAllBytesAsync(fullPath, new UTF8Encoding(false).GetBytes(content));
             ctx.ProtoIndex.RefreshFile(fullPath, relPath);
             await HttpJson.WriteAsync(res, new { success = true });
         }
