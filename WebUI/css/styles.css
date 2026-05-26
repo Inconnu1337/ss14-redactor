@@ -47,6 +47,7 @@
     --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
 
     /* Layout */
+    --activity-bar-w: 40px;
     --sidebar-w: 280px;
     --tab-h:     38px;
 }
@@ -71,33 +72,82 @@ body {
 /* ======================== Layout ======================== */
 #app { display: flex; height: 100vh; }
 
+/* ======================== Activity Bar ================== */
+#activity-bar {
+    width: var(--activity-bar-w);
+    min-width: var(--activity-bar-w);
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 0;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.activity-btn {
+    width: 34px; height: 34px;
+    background: none; border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    transition: color .15s, background .15s;
+    position: relative;
+}
+.activity-btn:hover { color: var(--text-primary); background: var(--bg-surface-hover); }
+.activity-btn.active { color: var(--text-primary); }
+/* Active indicator bar on left edge */
+.activity-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -6px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+}
+
 /* ======================== Sidebar ======================= */
 #sidebar {
     width: var(--sidebar-w);
     min-width: var(--sidebar-w);
     background: var(--bg-tertiary);
-    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: width .18s ease, min-width .18s ease;
+    flex-shrink: 0;
+    transition: width .2s ease, min-width .2s ease;
 }
-.sidebar-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
+/* Collapsed sidebar: only the activity bar icon strip remains visible. */
+#app.sidebar-hidden > #sidebar {
+    width: 0;
+    min-width: 0;
 }
-.sidebar-header h1 {
-    font-size: 14px; font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: .4px;
+#app.sidebar-hidden > #sidebar-resizer { display: none; }
+
+/* ======================== Side Panels =================== */
+.side-panel { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.side-panel.active { display: flex; }
+.panel-header {
+    padding: 8px 14px 6px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
 }
-#tree-toggle-btn {
-    background: none; border: none; color: var(--text-secondary);
-    cursor: pointer; font-size: 18px; padding: 4px 8px;
-    border-radius: var(--radius-sm); transition: .2s;
+
+/* ======================== Sidebar Resizer ================ */
+#sidebar-resizer {
+    width: 4px;
+    background: transparent;
+    cursor: col-resize;
+    flex-shrink: 0;
+    transition: background .15s;
+    border-right: 1px solid var(--border);
 }
-#tree-toggle-btn:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+#sidebar-resizer:hover,
+#sidebar-resizer.dragging { background: var(--accent); border-right-color: var(--accent); }
 
 .sidebar-search { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); }
 .sidebar-search input {
@@ -1425,6 +1475,7 @@ body {
 .editor-area {
     background: var(--bg-tertiary); /* #1e1f22 — darkest */
 }
+#activity-bar,
 #sidebar {
     background: #2b2d31; /* lighter than editor */
 }
@@ -1784,21 +1835,4 @@ body {
     padding: 2px 0;
 }
 
-/* ======================== Sidebar collapse ============================ */
-/* The header-bar button (#tree-toggle-btn) toggles .sidebar-collapsed on
-   the app shell. When collapsed the sidebar shrinks to a thin column that
-   only shows the toggle button, freeing horizontal space for the editor. */
-#app.sidebar-collapsed > #sidebar {
-    width: 36px;
-    min-width: 36px;
-}
-#app.sidebar-collapsed > #sidebar > .sidebar-header {
-    padding: 8px 4px;
-    justify-content: center;
-}
-#app.sidebar-collapsed > #sidebar > .sidebar-header h1,
-#app.sidebar-collapsed > #sidebar > .sidebar-search,
-#app.sidebar-collapsed > #sidebar > .file-tree,
-#app.sidebar-collapsed > #sidebar > #file-tree {
-    display: none;
-}
+/* ======================== (sidebar collapse removed) ================== */

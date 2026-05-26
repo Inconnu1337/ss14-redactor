@@ -11,16 +11,30 @@
 </head>
 <body>
     <div id="app">
+        <!-- Activity bar: narrow icon strip on the far left (VSCode-style).
+             Each button activates a named side-panel. -->
+        <div id="activity-bar">
+            <button class="activity-btn active" data-panel="files" title="Explorer">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                    <rect x="3" y="5" width="9" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <rect x="7" y="3" width="9" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+            </button>
+        </div>
+
         <aside id="sidebar">
-            <div class="sidebar-header">
-                <h1>⚛ SS14 Redactor</h1>
-                <button id="tree-toggle-btn" title="Hide / show sidebar">☰</button>
+            <!-- Files panel (first and currently only side panel) -->
+            <div id="panel-files" class="side-panel active">
+                <div class="panel-header">Explorer</div>
+                <div class="sidebar-search">
+                    <input type="text" id="file-search" placeholder="Search files & prototype IDs…" spellcheck="false">
+                </div>
+                <div id="file-tree" class="file-tree"></div>
             </div>
-            <div class="sidebar-search">
-                <input type="text" id="file-search" placeholder="Search files & prototype IDs…" spellcheck="false">
-            </div>
-            <div id="file-tree" class="file-tree"></div>
         </aside>
+
+        <!-- Drag handle between sidebar and main editor area -->
+        <div id="sidebar-resizer" title="Drag to resize panel"></div>
 
         <main id="main">
             <div id="tabs" class="tabs"></div>

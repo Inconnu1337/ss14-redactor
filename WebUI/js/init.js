@@ -321,9 +321,58 @@ async function loadEditorData() {
             const q = e.target.value;
             _searchTimer = setTimeout(() => renderFileTree(state.fileTree || [], treeEl, q), CFG.searchDebounce);
         });
-        document.getElementById('tree-toggle-btn').addEventListener('click', () => {
-            document.getElementById('app').classList.toggle('sidebar-collapsed');
+
+        // Activity bar: clicking active button toggles sidebar; clicking another switches panel.
+        const appEl = document.getElementById('app');
+        document.querySelectorAll('.activity-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isAlreadyActive = btn.classList.contains('active');
+                if (isAlreadyActive) {
+                    // Toggle collapse — same button = hide/show sidebar.
+                    appEl.classList.toggle('sidebar-hidden');
+                } else {
+                    // Different panel — always show sidebar and switch panel.
+                    appEl.classList.remove('sidebar-hidden');
+                    document.querySelectorAll('.activity-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.side-panel').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    const panelEl = document.getElementById(`panel-${btn.dataset.panel}`);
+                    if (panelEl) panelEl.classList.add('active');
+                }
+            });
         });
+
+        // Sidebar resize: drag the divider to change --sidebar-w.
+        const resizer = document.getElementById('sidebar-resizer');
+        const sidebar = document.getElementById('sidebar');
+        const savedW = localStorage.getItem('sidebarW');
+        if (savedW) document.documentElement.style.setProperty('--sidebar-w', savedW);
+
+        let _resizing = false, _resizeStartX = 0, _resizeStartW = 0;
+        resizer.addEventListener('mousedown', e => {
+            _resizing = true;
+            _resizeStartX = e.clientX;
+            _resizeStartW = sidebar.getBoundingClientRect().width;
+            resizer.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', e => {
+            if (!_resizing) return;
+            const newW = Math.max(140, Math.min(600, _resizeStartW + (e.clientX - _resizeStartX)));
+            document.documentElement.style.setProperty('--sidebar-w', newW + 'px');
+        });
+        document.addEventListener('mouseup', () => {
+            if (!_resizing) return;
+            _resizing = false;
+            resizer.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            const finalW = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w').trim();
+            localStorage.setItem('sidebarW', finalW);
+        });
+
         // Start file change push channel (SSE)
         startFileEventStream();
     }
