@@ -445,6 +445,7 @@ public sealed class FieldExtractor
             "ComponentRegistry" => ("componentRegistry", null, null),
             _ when name.StartsWith("ProtoId") && type.IsGenericType => ExtractProtoIdInfo(type),
             _ when name.StartsWith("EntProtoId") && type.IsGenericType => ("entityProtoId", null, null),
+            _ when IsValueTupleType(type) => ("tuple", null, null),
             _ when type.IsArray => ("list", null, null),
             _ when IsDictionaryLike(type) => ("map", null, null),
             _ when IsListLike(type) => ("list", null, null),
@@ -500,6 +501,9 @@ public sealed class FieldExtractor
         "SortedDictionary`2", "SortedList`2", "ConcurrentDictionary`2",
         "ImmutableDictionary`2", "ImmutableSortedDictionary`2",
     };
+
+    private static bool IsValueTupleType(Type type) =>
+        type.IsGenericType && type.Name.StartsWith("ValueTuple`");
 
     private static bool IsListLike(Type type)
     {
@@ -570,6 +574,17 @@ public sealed class FieldExtractor
                 var elem = memberType.GetElementType();
                 if (elem != null) field.Element = BuildTypeNode(elem, 0);
             }
+            else if (IsValueTupleType(memberType))
+            {
+                var args = memberType.GetGenericArguments();
+                var elems = new List<FieldTypeNode>();
+                foreach (var arg in args)
+                {
+                    var en = BuildTypeNode(arg, 0);
+                    if (en != null) elems.Add(en);
+                }
+                if (elems.Count > 0) field.TupleElements = elems.ToArray();
+            }
         }
         catch { /* ignore */ }
     }
@@ -620,6 +635,17 @@ public sealed class FieldExtractor
             {
                 var elem = t.GetElementType();
                 if (elem != null) node.Element = BuildTypeNode(elem, depth + 1);
+            }
+            else if (IsValueTupleType(t))
+            {
+                var args = t.GetGenericArguments();
+                var elems = new List<FieldTypeNode>();
+                foreach (var arg in args)
+                {
+                    var en = BuildTypeNode(arg, depth + 1);
+                    if (en != null) elems.Add(en);
+                }
+                if (elems.Count > 0) node.TupleElements = elems.ToArray();
             }
         }
         catch { /* ignore — leave children null */ }

@@ -644,6 +644,14 @@ body {
 
 /* ======================== List / Map Editors ============= */
 .list-editor, .map-editor { display: flex; flex-direction: column; gap: 4px; }
+/* Tuple: elements side by side, like a compact record */
+.tuple-editor { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+/* When a list row contains a tuple editor, the content cell must NOT stretch —
+   it should shrink-wrap so the remove button sits right after the last field. */
+.list-item:has(> .list-item-content > .tuple-editor) > .list-item-content {
+    flex: 0 0 auto;
+    min-width: unset;
+}
 .list-item, .map-entry {
     display: flex; align-items: flex-start; gap: 6px;
     padding: 4px 6px; background: var(--bg-surface);

@@ -227,6 +227,61 @@ function listCtrl(val, meta, dis, onChange) {
     return w;
 }
 
+// ======================== TUPLE EDITOR =================================
+// ValueTuple<T1,T2,...> serializes in RobustToolbox as a YAML sequence
+// [v1, v2, ...].  When loaded from the mapping form {k: v}, we normalise
+// it to [k, v] so editing is consistent.
+// On save, 2-tuples are emitted back as mapping form {v1: v2} to stay
+// consistent with how most SS14 YAML files write them.  N-tuples (N≠2)
+// are emitted as plain arrays (sequence form).
+function tupleCtrl(val, meta, dis, onChange) {
+    // Normalise mapping form {key: value} → [key, value] for 2-tuples.
+    let arr;
+    if (Array.isArray(val)) {
+        arr = [...val];
+    } else if (val && typeof val === 'object') {
+        const entries = Object.entries(val);
+        arr = entries.length === 1 ? [entries[0][0], entries[0][1]] : Object.values(val);
+    } else {
+        arr = [];
+    }
+
+    const elems = meta.tupleElements || [];
+    const is2Tuple = elems.length === 2;
+
+    const emit = () => {
+        if (is2Tuple) {
+            // Mapping form: {v1: v2} — matches the YAML style most SS14
+            // prototype files use for 2-tuples like (string type, string id).
+            const out = {};
+            out[arr[0] ?? ''] = arr[1] ?? '';
+            onChange(out);
+        } else {
+            onChange([...arr]);
+        }
+    };
+
+    const w = _div('field-control tuple-editor');
+    if (elems.length === 0) {
+        // No metadata: show a raw-text stub so the user can see something.
+        arr.forEach((item, i) => {
+            const c = elementControl({ kind: 'text' }, item, dis, nv => {
+                arr[i] = nv; emit();
+            });
+            w.appendChild(c);
+        });
+    } else {
+        elems.forEach((elemMeta, i) => {
+            const c = elementControl(elemMeta, arr[i] ?? null, dis, nv => {
+                arr[i] = nv;
+                emit();
+            });
+            w.appendChild(c);
+        });
+    }
+    return w;
+}
+
 // ======================== MAP EDITOR ===================================
 function mapCtrl(val, meta, dis, onChange) {
     const obj = (val && typeof val === 'object' && !Array.isArray(val)) ? { ...val } : {};

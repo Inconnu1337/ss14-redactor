@@ -167,7 +167,8 @@ function controlFor(meta, value, dis, onChange) {
     // stringify it. Route to the best-known structured renderer instead.
     if (isObj && !polymorphicKinds.has(kind)
         && kind !== 'list' && kind !== 'map' && kind !== 'vector2'
-        && kind !== 'vector3' && kind !== 'vector4' && kind !== 'box2') {
+        && kind !== 'vector3' && kind !== 'vector4' && kind !== 'box2'
+        && kind !== 'tuple') {
         const ddType = meta.dataDefinitionType || meta.fullType || meta.type;
         if (ddType && state.metadata?.dataDefinitions?.[ddType])
             return dataDefCtrl(value, ddType, dis, onChange);
@@ -197,6 +198,7 @@ function controlFor(meta, value, dis, onChange) {
         case 'protoId':       return searchDropdown(value, meta.protoTypeArg || 'entity', dis, onChange);
         case 'list':          return listCtrl(value, meta, dis, onChange);
         case 'map':           return mapCtrl(value, meta, dis, onChange);
+        case 'tuple':         return tupleCtrl(value, meta, dis, onChange);
         case 'vector2':       return vectorCtrl(value, ['x', 'y'], dis, onChange);
         case 'vector3':       return vectorCtrl(value, ['x', 'y', 'z'], dis, onChange);
         case 'vector4':       return vectorCtrl(value, ['x', 'y', 'z', 'w'], dis, onChange);
@@ -522,6 +524,7 @@ function synthMeta(node, extras) {
         element: n.element,
         key: n.key,
         value: n.value,
+        tupleElements: n.tupleElements,
         required: false,
     };
     if (extras) Object.assign(m, extras);
@@ -550,6 +553,7 @@ function defaultForKind(kind) {
         case 'spriteSpecifier': return { sprite: '', state: '' };
         case 'soundSpecifier': return { path: '' };
         case 'componentRegistry': return [];
+        case 'tuple': return {};
         case 'object':  return {};
         default: return '';
     }

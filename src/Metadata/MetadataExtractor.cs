@@ -220,10 +220,19 @@ public static class MetadataExtractor
                 catch { /* skip unreadable */ }
             }
         }
-        // Mix in the redactor's own assembly version so an editor upgrade
-        // (which can change FieldMetadata schema) invalidates the cache.
+        // Mix in the redactor's own assembly file timestamp so that any
+        // rebuild (which rewrites the DLL on disk) invalidates the cache,
+        // even when the semantic version hasn't changed.
         var selfVer = typeof(MetadataExtractor).Assembly.GetName().Version?.ToString() ?? "0";
-        entries.Add($"__redactor|{selfVer}");
+        var selfPath = typeof(MetadataExtractor).Assembly.Location;
+        var selfTs = "0";
+        try
+        {
+            var fi = new FileInfo(selfPath);
+            selfTs = fi.LastWriteTimeUtc.Ticks.ToString();
+        }
+        catch { /* ignore — version alone is the fallback */ }
+        entries.Add($"__redactor|{selfVer}|{selfTs}");
 
         using var sha = SHA256.Create();
         var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", entries)));

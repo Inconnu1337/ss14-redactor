@@ -81,6 +81,8 @@ public sealed class FieldMetadata
     public FieldTypeNode? Element { get; set; }
     public FieldTypeNode? Key { get; set; }
     public FieldTypeNode? Value { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public FieldTypeNode[]? TupleElements { get; set; }
 
     // DataDefinition reference
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -111,4 +113,6 @@ public sealed class FieldTypeNode
     public FieldTypeNode? Element { get; set; }
     public FieldTypeNode? Key { get; set; }
     public FieldTypeNode? Value { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public FieldTypeNode[]? TupleElements { get; set; }
 }
