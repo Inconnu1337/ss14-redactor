@@ -1,6 +1,6 @@
-using System.IO;
+﻿using System.IO;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Helpers that resolve user-supplied relative paths against a trusted base

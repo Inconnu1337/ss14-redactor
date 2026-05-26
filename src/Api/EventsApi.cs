@@ -1,7 +1,7 @@
-using System.Net;
+﻿using System.Net;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 internal sealed partial class ApiRouter
 {

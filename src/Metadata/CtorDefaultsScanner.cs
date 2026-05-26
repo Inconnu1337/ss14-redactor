@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Reads instance-constructor IL from compiled assemblies without executing

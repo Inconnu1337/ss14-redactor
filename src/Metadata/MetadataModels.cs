@@ -1,7 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 public sealed class MetadataRoot
 {

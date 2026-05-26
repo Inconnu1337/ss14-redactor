@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Lightweight HTTP server that serves the Redactor web UI and exposes
@@ -15,17 +15,17 @@ namespace Content.Redactor.Redactor;
 /// prototype IDs. Routing logic lives in <see cref="ApiRouter"/>; service
 /// implementations are split into dedicated classes.
 /// </summary>
-public static class RedactorServer
+public static class EditorServer
 {
     /// <summary>
     /// Embedded resource name prefix for web UI files.
     /// Matches the &lt;Link&gt; WebUI\... attribute in the .csproj.
     /// </summary>
-    private const string EmbeddedWebPrefix = "Content.Redactor.WebUI.";
+    private const string EmbeddedWebPrefix = "Content.Editor.WebUI.";
 
     public static async Task StartAsync(string? solutionRoot, int port)
     {
-        RedactorContext? initialCtx = null;
+        EditorContext? initialCtx = null;
         if (solutionRoot != null)
         {
             initialCtx = BuildContext(solutionRoot);
@@ -75,7 +75,7 @@ public static class RedactorServer
     }
 
     /// <summary>
-    /// Builds a fully-configured <see cref="RedactorContext"/> for the given project root.
+    /// Builds a fully-configured <see cref="EditorContext"/> for the given project root.
     /// Called both at startup (when a root is provided) and by <see cref="ApiRouter"/>
     /// when the user configures a project via the browser UI.
     /// </summary>
@@ -94,22 +94,22 @@ public static class RedactorServer
         var pathBytes = System.Text.Encoding.UTF8.GetBytes(normalized.ToLowerInvariant());
         var hash = System.Security.Cryptography.SHA256.HashData(pathBytes);
         var hashStr = Convert.ToHexString(hash.AsSpan(0, 4)).ToLowerInvariant();
-        return Path.Combine(appData, "ss14-redactor", $"{safe}-{hashStr}");
+        return Path.Combine(appData, "ss14-editor", $"{safe}-{hashStr}");
     }
 
-    internal static RedactorContext BuildContext(string solutionRoot)
+    internal static EditorContext BuildContext(string solutionRoot)
     {
-        var redactorDir = ProjectDataDir(solutionRoot);
+        var EditorDir = ProjectDataDir(solutionRoot);
         var prototypesDir = Path.Combine(solutionRoot, "Resources", "Prototypes");
         var resourcesDir = Path.Combine(solutionRoot, "Resources");
         var texturesDir = Path.Combine(solutionRoot, "Resources", "Textures");
         var audioDir = Path.Combine(solutionRoot, "Resources", "Audio");
         var enginePrototypesDir = Path.Combine(solutionRoot, "RobustToolbox", "Resources", "EnginePrototypes");
 
-        return new RedactorContext
+        return new EditorContext
         {
             SolutionRoot = solutionRoot,
-            RedactorDir = redactorDir,
+            EditorDir = EditorDir,
             PrototypesDir = prototypesDir,
             ResourcesDir = resourcesDir,
             TexturesDir = texturesDir,
@@ -204,7 +204,7 @@ public static class RedactorServer
     /// <summary>
     /// Loads a web UI file from the assembly's embedded resources.
     /// <para>
-    /// Mapping: <c>/js/api.js</c> → <c>Content.Redactor.WebUI.js.api.js</c>
+    /// Mapping: <c>/js/api.js</c> → <c>Content.Editor.WebUI.js.api.js</c>
     /// (path separators become dots, matching the MSBuild Link attribute).
     /// </para>
     /// </summary>

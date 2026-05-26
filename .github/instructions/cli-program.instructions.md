@@ -1,4 +1,4 @@
----
+﻿---
 description: "Rules for editing Program.cs — the CLI entry point. Covers subcommand wiring and README synchronisation."
 applyTo: "src/Program.cs"
 ---
@@ -10,9 +10,9 @@ The current CLI surface is:
 
 | Command | Effect |
 |---|---|
-| `ss14-redactor` | starts the server in setup mode and opens the browser |
-| `ss14-redactor serve [path] [port]` | starts the server pointed at a project |
-| `ss14-redactor extract [path]` | extracts `metadata.json` without starting the server |
+| `ss14-editor` | starts the server in setup mode and opens the browser |
+| `ss14-editor serve [path] [port]` | starts the server pointed at a project |
+| `ss14-editor extract [path]` | extracts `metadata.json` without starting the server |
 
 ## Required follow-ups when changing CLI behaviour
 
@@ -22,5 +22,5 @@ The current CLI surface is:
 4. **Tests.** There is no test for `Program.cs` itself (it's a thin shell). If you move logic from `Program.cs` into a service, write a test for the service.
 
 ## Things this file should **not** do
-- Heavy lifting. Delegate to services: [src/RedactorServer.cs](../../src/RedactorServer.cs), [src/MetadataExtractor.cs](../../src/MetadataExtractor.cs).
+- Heavy lifting. Delegate to services: [src/EditorServer.cs](../../src/EditorServer.cs), [src/MetadataExtractor.cs](../../src/MetadataExtractor.cs).
 - Logging setup beyond `Console.WriteLine`. Adding a logger is a separate, discussed refactor.

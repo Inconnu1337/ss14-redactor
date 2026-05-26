@@ -1,8 +1,8 @@
-using System.IO;
-using Content.Redactor.Redactor;
+﻿using System.IO;
+using Content.Editor.Editor;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
 public class PathSecurityTests
 {

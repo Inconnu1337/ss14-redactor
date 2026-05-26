@@ -1,11 +1,11 @@
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
-using Content.Redactor.Redactor;
+using Content.Editor.Editor;
 
 /// <summary>
 /// End-to-end: stage the test DLL (which contains fixture types with attribute

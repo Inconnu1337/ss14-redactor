@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Modern Vista+ folder picker via IFileOpenDialog COM interop. The legacy

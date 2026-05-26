@@ -1,13 +1,13 @@
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Content.Redactor.Redactor;
+using Content.Editor.Editor;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
 public class HttpJsonTests
 {

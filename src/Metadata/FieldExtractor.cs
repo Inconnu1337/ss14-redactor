@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Extracts DataField metadata from type members. Handles classification of

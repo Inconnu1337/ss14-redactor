@@ -1,11 +1,11 @@
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Small helpers for reading/writing JSON over <see cref="HttpListener"/>.

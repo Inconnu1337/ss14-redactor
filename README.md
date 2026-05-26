@@ -1,4 +1,4 @@
-# SS14 Editor
+﻿# SS14 Editor
 
 A standalone visual editor for [Space Station 14](https://github.com/space-wizards/space-station-14) prototype YAML files.  
 Works with **any SS14 fork** — just point it at your project folder.
@@ -29,17 +29,17 @@ Go to the [Releases](../../releases) page and download the binary for your platf
 
 | Platform | File |
 |----------|------|
-| Windows  | `ss14-redactor-win-x64.zip` → extract → run `ss14-redactor.exe` |
-| Linux    | `ss14-redactor-linux-x64.tar.gz` → extract → `./ss14-redactor` |
-| macOS (Apple Silicon) | `ss14-redactor-osx-arm64.tar.gz` |
+| Windows  | `ss14-editor-win-x64.zip` → extract → run `ss14-editor.exe` |
+| Linux    | `ss14-editor-linux-x64.tar.gz` → extract → `./ss14-editor` |
+| macOS (Apple Silicon) | `ss14-editor-osx-arm64.tar.gz` |
 
 The binary is fully self-contained — no .NET runtime needed.
 
 ### Option B — Build from source
 
 ```bash
-git clone https://github.com/your-org/ss14-redactor
-cd ss14-redactor
+git clone https://github.com/your-org/ss14-editor
+cd ss14-editor
 dotnet run
 ```
 
@@ -69,14 +69,14 @@ Requires [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
 ## CLI usage
 
 ```
-ss14-redactor                         # start editor, open browser (setup mode)
-ss14-redactor serve [path] [port]     # start editor pointing at a specific project
-ss14-redactor extract [path]          # extract metadata.json without starting the server
+ss14-editor                         # start editor, open browser (setup mode)
+ss14-editor serve [path] [port]     # start editor pointing at a specific project
+ss14-editor extract [path]          # extract metadata.json without starting the server
 ```
 
-On `serve`/`extract` a fingerprint cache is consulted first: if every scanned DLL has the same size + mtime as last time and the redactor's own version is unchanged, extraction is skipped entirely and the existing `metadata.json` is reused — re-opening a project after a build is near-instant.
+On `serve`/`extract` a fingerprint cache is consulted first: if every scanned DLL has the same size + mtime as last time and the editor's own version is unchanged, extraction is skipped entirely and the existing `metadata.json` is reused — re-opening a project after a build is near-instant.
 
-The generated files (`metadata.json`, `metadata.cache.txt`) are stored in the OS user data folder **outside** the scanned project tree, under `%LOCALAPPDATA%\ss14-redactor\<project>-<hash>\` (Windows) or `~/.local/share/ss14-redactor/<project>-<hash>/` (Linux/macOS). Delete that folder to force a full rebuild.
+The generated files (`metadata.json`, `metadata.cache.txt`) are stored in the OS user data folder **outside** the scanned project tree, under `%LOCALAPPDATA%\ss14-editor\<project>-<hash>\` (Windows) or `~/.local/share/ss14-editor/<project>-<hash>/` (Linux/macOS). Delete that folder to force a full rebuild.
 
 ---
 

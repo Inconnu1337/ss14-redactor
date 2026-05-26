@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>Content.Redactor.Tests</RootNamespace>
-    <AssemblyName>ss14-redactor.Tests</AssemblyName>
+    <RootNamespace>Content.Editor.Tests</RootNamespace>
+    <AssemblyName>ss14-editor.Tests</AssemblyName>
     <Nullable>enable</Nullable>
     <LangVersion>14</LangVersion>
     <IsPackable>false</IsPackable>
@@ -16,6 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ss14-redactor.csproj" />
+    <ProjectReference Include="..\..\ss14-editor.csproj" />
   </ItemGroup>
 </Project>

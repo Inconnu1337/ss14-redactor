@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 
 #pragma warning disable CS0649 // Fixture fields are never written: they exist for reflection only.
 
-namespace Content.Redactor.Tests.Fixtures;
+namespace Content.Editor.Tests.Fixtures;
 
 // Fixture attributes mimicking SS14 ones. MetadataExtractor / FieldExtractor
 // recognise attributes purely by Name (string), so we do not need to reference

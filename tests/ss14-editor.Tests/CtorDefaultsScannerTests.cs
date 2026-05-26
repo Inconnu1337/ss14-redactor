@@ -1,11 +1,11 @@
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Reflection;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
-using Content.Redactor.Redactor;
+using Content.Editor.Editor;
 
 /// <summary>
 /// Scans this very test DLL with <see cref="CtorDefaultsScanner"/> and asserts
@@ -15,7 +15,7 @@ using Content.Redactor.Redactor;
 /// </summary>
 public class CtorDefaultsScannerTests
 {
-    private const string FixtureType = "Content.Redactor.Tests.Fixtures.FixtureDefaultsDef";
+    private const string FixtureType = "Content.Editor.Tests.Fixtures.FixtureDefaultsDef";
 
     private static CtorDefaultsScanner LoadScanner()
     {
@@ -133,7 +133,7 @@ public class CtorDefaultsScannerTests
         // the scanner WILL pick up). So instead use a type known to have
         // no literal initializers: FixtureBaseEffect has only `float Probability`
         // with no initializer.
-        var map = s.GetDefaultsFor("Content.Redactor.Tests.Fixtures.FixtureBaseEffect");
+        var map = s.GetDefaultsFor("Content.Editor.Tests.Fixtures.FixtureBaseEffect");
         Assert.True(map == null || map.Count == 0);
     }
 
@@ -182,7 +182,7 @@ public class CtorDefaultsScannerTests
         // which used to make the scanner bail before reaching later
         // literal initialisers.
         var s = LoadScanner();
-        var map = s.GetDefaultsFor("Content.Redactor.Tests.Fixtures.FixtureOpaqueCtorDef")!;
+        var map = s.GetDefaultsFor("Content.Editor.Tests.Fixtures.FixtureOpaqueCtorDef")!;
         Assert.False(map.ContainsKey("OpaqueByCall"));
         Assert.Equal(1, map["TrueAfterCall"]);
     }
@@ -194,7 +194,7 @@ public class CtorDefaultsScannerTests
         // ldstr "second" must NOT be recorded as Wrapped's default. The
         // following plain literal must still be recovered.
         var s = LoadScanner();
-        var map = s.GetDefaultsFor("Content.Redactor.Tests.Fixtures.FixtureMultiArgNewObjDef")!;
+        var map = s.GetDefaultsFor("Content.Editor.Tests.Fixtures.FixtureMultiArgNewObjDef")!;
         Assert.False(map.ContainsKey("Wrapped"));
         Assert.Equal(9, map["RecoveredAfter"]);
     }
@@ -206,7 +206,7 @@ public class CtorDefaultsScannerTests
         // field. Previously the scanner returned "Zero" as if it were an
         // enum member name.
         var s = LoadScanner();
-        var map = s.GetDefaultsFor("Content.Redactor.Tests.Fixtures.FixtureStaticLdsfldDef")!;
+        var map = s.GetDefaultsFor("Content.Editor.Tests.Fixtures.FixtureStaticLdsfldDef")!;
         Assert.False(map.ContainsKey("SpanZero"));
         Assert.Equal(11, map["AfterStatic"]);
     }

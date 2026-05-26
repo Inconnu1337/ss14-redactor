@@ -1,14 +1,14 @@
-using System.IO;
+﻿using System.IO;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Shared runtime context passed to <see cref="ApiRouter"/> and its services.
 /// </summary>
-internal sealed class RedactorContext
+internal sealed class EditorContext
 {
     public required string SolutionRoot { get; init; }
-    public required string RedactorDir { get; init; }
+    public required string EditorDir { get; init; }
     public required string PrototypesDir { get; init; }
     public required string ResourcesDir { get; init; }
     public required string TexturesDir { get; init; }

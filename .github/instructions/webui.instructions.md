@@ -1,4 +1,4 @@
----
+﻿---
 description: "Rules for editing the WebUI/ folder (vanilla HTML, CSS, JS embedded as resources)."
 applyTo: "WebUI/**"
 ---
@@ -7,7 +7,7 @@ applyTo: "WebUI/**"
 
 ## No build step
 - The frontend is **vanilla JS / HTML / CSS**. There is no bundler, no transpiler, no npm, no TypeScript.
-- Files are embedded into the binary via `<EmbeddedResource Include="WebUI\**\*">` in [ss14-redactor.csproj](../../ss14-redactor.csproj). Adding a file there means it ships in the binary automatically — no manual list to update.
+- Files are embedded into the binary via `<EmbeddedResource Include="WebUI\**\*">` in [ss14-editor.csproj](../../ss14-editor.csproj). Adding a file there means it ships in the binary automatically — no manual list to update.
 - Do not introduce `package.json`, `vite.config`, `tsconfig`, or similar. If the user explicitly asks for it, push back first.
 
 ## Network calls

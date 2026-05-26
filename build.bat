@@ -1,14 +1,14 @@
-@echo off
+﻿@echo off
 setlocal
 
 :: -----------------------------------------------------------------------
-:: Build ss14-redactor
+:: Build ss14-editor
 ::   build.bat            - Debug build, runs in-place (dotnet run style)
 ::   build.bat release    - Release build output to bin\
 ::   build.bat publish    - Self-contained win-x64 single-file to publish\
 :: -----------------------------------------------------------------------
 
-set PROJECT=ss14-redactor.csproj
+set PROJECT=ss14-editor.csproj
 
 if /i "%1"=="publish" goto publish
 if /i "%1"=="release" goto release
@@ -18,7 +18,7 @@ if /i "%1"=="release" goto release
 echo [Build] Debug...
 dotnet build %PROJECT% -c Debug -v q
 if %ERRORLEVEL% neq 0 ( echo Build FAILED. & exit /b %ERRORLEVEL% )
-echo [Build] OK: bin\ss14-redactor.exe
+echo [Build] OK: bin\ss14-editor.exe
 goto end
 
 :: ---- Release build ----------------------------------------------------
@@ -26,7 +26,7 @@ goto end
 echo [Build] Release...
 dotnet build %PROJECT% -c Release -v q
 if %ERRORLEVEL% neq 0 ( echo Build FAILED. & exit /b %ERRORLEVEL% )
-echo [Build] OK: bin\ss14-redactor.exe
+echo [Build] OK: bin\ss14-editor.exe
 goto end
 
 :: ---- Self-contained single-file publish for Windows ------------------
@@ -38,7 +38,7 @@ dotnet publish %PROJECT% -c Release -r win-x64 --self-contained true ^
     -p:DebugType=embedded ^
     -o publish\win-x64
 if %ERRORLEVEL% neq 0 ( echo Publish FAILED. & exit /b %ERRORLEVEL% )
-echo [Build] Published: publish\win-x64\ss14-redactor.exe
+echo [Build] Published: publish\win-x64\ss14-editor.exe
 goto end
 
 :end

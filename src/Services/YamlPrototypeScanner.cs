@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Parses an SS14 prototype YAML file using YamlDotNet's representation model

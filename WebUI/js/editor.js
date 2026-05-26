@@ -1,5 +1,5 @@
-// ======================================================================
-//  SS14 Prototype Redactor – Editor & Proto Cards
+﻿// ======================================================================
+//  SS14 Prototype Editor – Editor & Proto Cards
 // ======================================================================
 
 'use strict';
@@ -28,7 +28,7 @@ function renderEditor(groupId) {
     if (!area) return;
     if (!filePath) {
         area.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>
-            <h2>SS14 Prototype Redactor</h2>
+            <h2>SS14 Prototype Editor</h2>
             <p>Open a YAML file from the sidebar to start editing prototypes visually.</p>
             <p class="hint">Ctrl+S — force save</p></div>`;
         return;

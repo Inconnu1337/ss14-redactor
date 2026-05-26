@@ -1,4 +1,4 @@
----
+﻿---
 description: "Rules for editing the API surface in src/Api/ — ApiRouter dispatcher and the per-domain partial-class handler files (StatusApi, FileApi, FolderApi, AssetApi, etc.). Covers route registration, README sync, path safety, and tests."
 applyTo: "src/Api/**/*.cs"
 ---
@@ -30,7 +30,7 @@ applyTo: "src/Api/**/*.cs"
 
 ## Required follow-ups when adding/changing endpoints
 
-- **Test:** add a test in [tests/ss14-redactor.Tests/ApiRouterTests.cs](../../tests/ss14-redactor.Tests/ApiRouterTests.cs) exercising the new handler via the public dispatcher. The `BuildCtx()` helper + `ApiTestServer.Start(...)` pattern starts a real `HttpListener` on an ephemeral port.
+- **Test:** add a test in [tests/ss14-editor.Tests/ApiRouterTests.cs](../../tests/ss14-editor.Tests/ApiRouterTests.cs) exercising the new handler via the public dispatcher. The `BuildCtx()` helper + `ApiTestServer.Start(...)` pattern starts a real `HttpListener` on an ephemeral port.
 - **Frontend:** if the endpoint is consumed from the UI, expose it in [WebUI/js/api.js](../../WebUI/js/api.js). The frontend never calls `fetch` directly outside that file.
 - **README:** the [README.md](../../README.md) does not currently enumerate endpoints, but if the new endpoint is user-visible (e.g. CLI exposes it), update the relevant section.
 
@@ -42,5 +42,5 @@ applyTo: "src/Api/**/*.cs"
 
 ## Security invariants — do not change without discussion
 
-- **No CORS headers.** [RedactorServer.cs](../../src/Http/RedactorServer.cs) deliberately does NOT send `Access-Control-Allow-Origin: *`. Same-origin policy is the only thing preventing arbitrary websites from issuing `/api/file` POST requests against the user's local listener.
+- **No CORS headers.** [EditorServer.cs](../../src/Http/EditorServer.cs) deliberately does NOT send `Access-Control-Allow-Origin: *`. Same-origin policy is the only thing preventing arbitrary websites from issuing `/api/file` POST requests against the user's local listener.
 - **Engine prototypes are read-only.** Paths starting with `ProtoIndexService.EnginePrefix` must reject write attempts with 403 (see `HandleFileAsync`).

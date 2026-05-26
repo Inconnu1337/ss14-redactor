@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,12 +9,12 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Scans compiled assemblies via MetadataLoadContext to extract
 /// all IPrototype types, IComponent types and their [DataField] metadata.
-/// Outputs Redactor/metadata.json consumed by the web editor.
+/// Outputs Editor/metadata.json consumed by the web editor.
 /// </summary>
 public static class MetadataExtractor
 {
@@ -194,7 +194,7 @@ public static class MetadataExtractor
 
     /// <summary>
     /// Build a deterministic fingerprint over every DLL the extractor will
-    /// scan plus the redactor's own version, so a content rebuild OR an
+    /// scan plus the editor's own version, so a content rebuild OR an
     /// editor upgrade invalidates the cache automatically. Uses
     /// path+length+last-write-time-utc per file rather than a content
     /// hash — orders of magnitude faster for the typical SS14 fork
@@ -220,7 +220,7 @@ public static class MetadataExtractor
                 catch { /* skip unreadable */ }
             }
         }
-        // Mix in the redactor's own assembly file timestamp so that any
+        // Mix in the editor's own assembly file timestamp so that any
         // rebuild (which rewrites the DLL on disk) invalidates the cache,
         // even when the semantic version hasn't changed.
         var selfVer = typeof(MetadataExtractor).Assembly.GetName().Version?.ToString() ?? "0";
@@ -232,7 +232,7 @@ public static class MetadataExtractor
             selfTs = fi.LastWriteTimeUtc.Ticks.ToString();
         }
         catch { /* ignore — version alone is the fallback */ }
-        entries.Add($"__redactor|{selfVer}|{selfTs}");
+        entries.Add($"__editor|{selfVer}|{selfTs}");
 
         using var sha = SHA256.Create();
         var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", entries)));

@@ -1,5 +1,5 @@
-// ======================================================================
-//  SS14 Prototype Redactor – Field Validation
+﻿// ======================================================================
+//  SS14 Prototype Editor – Field Validation
 // ======================================================================
 //  Provides best-effort, client-side validation of field values against
 //  the metadata extracted from C# code.  Validation is **non-blocking**:

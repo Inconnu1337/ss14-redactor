@@ -1,5 +1,5 @@
 ﻿// ======================================================================
-//  SS14 Prototype Redactor – Field Renderers (Controls)
+//  SS14 Prototype Editor – Field Renderers (Controls)
 // ======================================================================
 
 'use strict';

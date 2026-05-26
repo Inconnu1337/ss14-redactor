@@ -1,7 +1,7 @@
-using Content.Redactor.Redactor;
+﻿using Content.Editor.Editor;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
 public class StaticMimeTests
 {

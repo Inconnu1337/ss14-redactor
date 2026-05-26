@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 internal sealed partial class ApiRouter
 {
@@ -60,7 +60,7 @@ internal sealed partial class ApiRouter
         try
         {
             Logger.Info($"Extracting metadata for: {projectPath}");
-            MetadataExtractor.Extract(projectPath, RedactorServer.ProjectDataDir(projectPath));
+            MetadataExtractor.Extract(projectPath, EditorServer.ProjectDataDir(projectPath));
         }
         catch (Exception ex)
         {
@@ -68,7 +68,7 @@ internal sealed partial class ApiRouter
             return;
         }
 
-        var newCtx = RedactorServer.BuildContext(projectPath);
+        var newCtx = EditorServer.BuildContext(projectPath);
         newCtx.FileWatcher.Changed += evt =>
         {
             var rel = evt.RelativePath;

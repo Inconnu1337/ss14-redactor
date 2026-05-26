@@ -1,5 +1,5 @@
-// ======================================================================
-//  SS14 Prototype Redactor – Collection & DataDefinition Editors
+﻿// ======================================================================
+//  SS14 Prototype Editor – Collection & DataDefinition Editors
 // ======================================================================
 //  listCtrl / mapCtrl / dataDefCtrl extracted from fields.js.
 //  Depends on globals from fields.js: elementControl, defaultForKind,

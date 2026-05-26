@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Watches the prototypes directory for external changes (file edits, renames,
@@ -52,7 +52,7 @@ internal sealed class FileWatcherService : IDisposable
 
     /// <summary>
     /// Tells the watcher to ignore the next change event for the supplied
-    /// path. Called immediately after the redactor itself writes to a file so
+    /// path. Called immediately after the editor itself writes to a file so
     /// connected clients don't receive a self-induced "external change" notice.
     /// </summary>
     public void SuppressNext(string fullPath)
@@ -63,7 +63,7 @@ internal sealed class FileWatcherService : IDisposable
     private void Schedule(string fullPath, FileChangeKind kind)
     {
         var canonical = Path.GetFullPath(fullPath);
-        // A single redactor write usually produces several FileSystemWatcher
+        // A single editor write usually produces several FileSystemWatcher
         // events (Created+Changed, or multiple Changed).  Keep the suppression
         // timestamp until the window elapses so every event in that burst is
         // filtered, not just the first one.

@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Content.Redactor.Redactor;
+using Content.Editor.Editor;
 
-namespace Content.Redactor;
+namespace Content.Editor;
 
 public static class Program
 {
@@ -13,7 +13,7 @@ public static class Program
         // the browser opens a project-picker page instead of the editor.
         if (args.Length == 0)
         {
-            await RedactorServer.StartAsync(solutionRoot: null, port: 2701);
+            await EditorServer.StartAsync(solutionRoot: null, port: 2701);
             return;
         }
 
@@ -26,7 +26,7 @@ public static class Program
                     Console.Error.WriteLine("Could not find solution root. Pass it as argument.");
                     return;
                 }
-                MetadataExtractor.Extract(extractRoot, RedactorServer.ProjectDataDir(extractRoot));
+                MetadataExtractor.Extract(extractRoot, EditorServer.ProjectDataDir(extractRoot));
                 break;
 
             case "scandefaults":
@@ -47,9 +47,9 @@ public static class Program
                 var port = args.Length > 2 ? int.Parse(args[2]) : 2701;
 
                 if (serveRoot != null)
-                    MetadataExtractor.Extract(serveRoot, RedactorServer.ProjectDataDir(serveRoot));
+                    MetadataExtractor.Extract(serveRoot, EditorServer.ProjectDataDir(serveRoot));
 
-                await RedactorServer.StartAsync(serveRoot, port);
+                await EditorServer.StartAsync(serveRoot, port);
                 break;
 
             default:
@@ -60,11 +60,11 @@ public static class Program
 
     private static void PrintUsage()
     {
-        Console.WriteLine("SS14 Prototype Redactor");
+        Console.WriteLine("SS14 Prototype Editor");
         Console.WriteLine();
         Console.WriteLine("Usage:");
-        Console.WriteLine("  ss14-redactor extract [solutionRoot]  - Extract prototype metadata to Redactor/metadata.json");
-        Console.WriteLine("  ss14-redactor serve [solutionRoot] [port] - Start the visual editor (default port: 2701)");
+        Console.WriteLine("  ss14-editor extract [solutionRoot]  - Extract prototype metadata to Editor/metadata.json");
+        Console.WriteLine("  ss14-editor serve [solutionRoot] [port] - Start the visual editor (default port: 2701)");
         Console.WriteLine();
         Console.WriteLine("When run without arguments the editor starts and lets you pick the project folder in the browser.");
     }

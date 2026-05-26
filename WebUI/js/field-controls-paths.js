@@ -1,5 +1,5 @@
-// ======================================================================
-//  SS14 Prototype Redactor – Path/Sprite Controls
+﻿// ======================================================================
+//  SS14 Prototype Editor – Path/Sprite Controls
 // ======================================================================
 //  Resource path autocomplete + the rich SpriteSpecifier editor.  Pulled
 //  out of fields.js to keep that file focused on primitive controls and

@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 internal sealed partial class ApiRouter
 {
@@ -118,7 +118,7 @@ internal sealed partial class ApiRouter
     /// Normalises a texture path supplied by the client so both
     /// <c>"Objects/Tools/wrench.rsi"</c> and the SS14-style absolute form
     /// <c>"/Textures/Objects/Tools/wrench.rsi"</c> resolve to the same file
-    /// under <see cref="RedactorContext.TexturesDir"/>.
+    /// under <see cref="EditorContext.TexturesDir"/>.
     /// </summary>
     private static string NormalizeTexturesPath(string path)
     {

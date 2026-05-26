@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.IO;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
 /// <summary>
 /// Disposable temporary directory for tests. Cleaned up on Dispose.
@@ -14,7 +14,7 @@ public sealed class TempDir : IDisposable
     {
         Path = System.IO.Path.Combine(
             System.IO.Path.GetTempPath(),
-            "ss14-redactor-tests-" + Guid.NewGuid().ToString("N"));
+            "ss14-editor-tests-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path);
     }
 

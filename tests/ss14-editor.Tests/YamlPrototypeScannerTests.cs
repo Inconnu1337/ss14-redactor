@@ -1,8 +1,8 @@
-using System.Collections.Generic;
-using Content.Redactor.Redactor;
+﻿using System.Collections.Generic;
+using Content.Editor.Editor;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
 public class YamlPrototypeScannerTests
 {

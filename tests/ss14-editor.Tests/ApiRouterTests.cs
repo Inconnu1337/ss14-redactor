@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -8,24 +8,24 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
-using Content.Redactor.Redactor;
+using Content.Editor.Editor;
 
 public class ApiRouterTests
 {
     /// <summary>
-    /// Build a fully-wired RedactorContext over a temp solution root with the
+    /// Build a fully-wired EditorContext over a temp solution root with the
     /// Resources/Prototypes structure SS14 expects. The FileWatcher is
     /// constructed but not started so the prototypes dir must exist.
     /// </summary>
-    private static (TempDir tmp, RedactorContext ctx) BuildCtx()
+    private static (TempDir tmp, EditorContext ctx) BuildCtx()
     {
         var tmp = new TempDir();
         Directory.CreateDirectory(Path.Combine(tmp.Path, "Resources", "Prototypes"));
         Directory.CreateDirectory(Path.Combine(tmp.Path, "Resources", "Textures"));
         Directory.CreateDirectory(Path.Combine(tmp.Path, "Resources", "Audio"));
-        var ctx = RedactorServer.BuildContext(tmp.Path);
+        var ctx = EditorServer.BuildContext(tmp.Path);
         return (tmp, ctx);
     }
 

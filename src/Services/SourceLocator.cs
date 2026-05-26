@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Locates a <c>.cs</c> source file for a fully-qualified type name by scanning

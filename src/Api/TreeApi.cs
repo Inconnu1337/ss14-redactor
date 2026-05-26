@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 internal sealed partial class ApiRouter
 {
@@ -30,7 +30,7 @@ internal sealed partial class ApiRouter
     private async Task HandleMetadataAsync(HttpListenerRequest req, HttpListenerResponse res)
     {
         var ctx = _ctx!;
-        var metaPath = Path.Combine(ctx.RedactorDir, "metadata.json");
+        var metaPath = Path.Combine(ctx.EditorDir, "metadata.json");
         if (!File.Exists(metaPath))
         {
             await HttpJson.WriteErrorAsync(res, 404, "metadata.json not found. Build the project first.");

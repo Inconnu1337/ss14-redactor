@@ -1,5 +1,5 @@
-// ======================================================================
-//  SS14 Prototype Redactor – Tabs & Editor Groups
+﻿// ======================================================================
+//  SS14 Prototype Editor – Tabs & Editor Groups
 // ======================================================================
 //
 //  Architecture: multiple editor groups arranged side-by-side (VS Code

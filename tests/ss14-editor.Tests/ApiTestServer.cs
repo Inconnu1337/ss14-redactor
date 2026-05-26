@@ -1,13 +1,13 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
-using Content.Redactor.Redactor;
+using Content.Editor.Editor;
 
 /// <summary>
 /// Spins up a real <see cref="HttpListener"/> on an ephemeral port and routes

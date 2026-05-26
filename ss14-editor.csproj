@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>ss14-redactor</AssemblyName>
-    <RootNamespace>Content.Redactor</RootNamespace>
+    <AssemblyName>ss14-editor</AssemblyName>
+    <RootNamespace>Content.Editor</RootNamespace>
     <TargetFramework>net10.0</TargetFramework>
-    <!-- Keep output flat: bin/ss14-redactor[.exe] -->
+    <!-- Keep output flat: bin/ss14-editor[.exe] -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <OutputPath>bin\</OutputPath>

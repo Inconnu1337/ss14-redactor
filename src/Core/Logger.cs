@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 internal static class Logger
 {

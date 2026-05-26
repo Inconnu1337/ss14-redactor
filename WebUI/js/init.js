@@ -1,5 +1,5 @@
-// ======================================================================
-//  SS14 Prototype Redactor – Initialization & Keyboard Shortcuts
+﻿// ======================================================================
+//  SS14 Prototype Editor – Initialization & Keyboard Shortcuts
 // ======================================================================
 
 'use strict';
@@ -132,7 +132,7 @@ function startFileEventStream() {
 
 // ======================== INIT =========================================
 (async function init() {
-    console.log('[Redactor] Initializing...');
+    console.log('[Editor] Initializing...');
 
     // ---- Step 1: check whether a project is already configured -----------
     let status;
@@ -149,7 +149,7 @@ function startFileEventStream() {
 })();
 
 // ======================== SETUP OVERLAY ================================
-const HISTORY_KEY = 'ss14-redactor-history';
+const HISTORY_KEY = 'ss14-editor-history';
 
 function loadHistory() {
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
@@ -383,7 +383,7 @@ async function loadEditorData() {
         console.warn('[Init] Some data unavailable:', failed.map(r => r.reason));
         toast('Some data unavailable – build the project first', 'warning');
     } else {
-        console.log('[Redactor] Ready');
+        console.log('[Editor] Ready');
         toast('Ready', 'success');
     }
 }

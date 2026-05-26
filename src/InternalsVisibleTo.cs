@@ -1,3 +1,3 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("ss14-redactor.Tests")]
+[assembly: InternalsVisibleTo("ss14-editor.Tests")]

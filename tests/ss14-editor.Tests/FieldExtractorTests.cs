@@ -1,13 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Xunit;
 
-namespace Content.Redactor.Tests;
+namespace Content.Editor.Tests;
 
-using Content.Redactor.Redactor;
+using Content.Editor.Editor;
 
 /// <summary>
 /// Loads this very test assembly inside a <see cref="MetadataLoadContext"/> and

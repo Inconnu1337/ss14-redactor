@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Content.Redactor.Redactor;
+namespace Content.Editor.Editor;
 
 /// <summary>
 /// Thin dispatcher: looks up <c>/api/*</c> path in the route table and
@@ -12,7 +12,7 @@ namespace Content.Redactor.Redactor;
 /// </summary>
 internal sealed partial class ApiRouter
 {
-    private volatile RedactorContext? _ctx;
+    private volatile EditorContext? _ctx;
     private readonly Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, Task>> _routes;
 
     /// <summary>Endpoints that work even when no project is configured yet.</summary>
@@ -23,7 +23,7 @@ internal sealed partial class ApiRouter
         "/api/browse-folder",
     };
 
-    public ApiRouter(RedactorContext? initialCtx)
+    public ApiRouter(EditorContext? initialCtx)
     {
         _ctx = initialCtx;
         _routes = new(StringComparer.OrdinalIgnoreCase)
