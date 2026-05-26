@@ -109,7 +109,10 @@ function startFileEventStream() {
                 // server-side suppress window) — do nothing, keep cursor & UI.
                 if (content === fs.content) return;
                 fs.content = content;
-                fs.yaml = parseYaml(content);
+                const { protos, doc } = parseYamlDoc(content);
+                fs.yaml = protos;
+                fs.doc = doc;
+                fs.dirtyProtos = new Set();
                 fs.history = [content];
                 fs.historyIdx = 0;
                 state.resolvedCache.clear();

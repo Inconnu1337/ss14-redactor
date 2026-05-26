@@ -331,7 +331,10 @@ async function openFile(path, targetGroupId) {
         placeholder.content    = resp.content;
         placeholder.history    = [resp.content];
         placeholder.historyIdx = 0;
-        placeholder.yaml       = parseYaml(resp.content);
+        const { protos, doc }  = parseYamlDoc(resp.content);
+        placeholder.yaml       = protos;
+        placeholder.doc        = doc;
+        placeholder.dirtyProtos = new Set();
         placeholder.readOnly   = !!resp.readOnly || path.startsWith('__engine__/');
         placeholder.loading    = false;
         try {

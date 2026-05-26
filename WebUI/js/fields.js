@@ -247,7 +247,8 @@ function unsupportedStub(typeName, value, onChange) {
         ta.rows = Math.min(Math.max(yamlStr.split('\n').length, 3), 20);
         ta.addEventListener('change', () => {
             try {
-                const p = jsyaml.load(ta.value, { schema: SCHEMA });
+                const p = parseYamlValue(ta.value);
+                if (p === undefined) throw new Error();
                 ta.classList.remove('error');
                 onChange(p);
             } catch { ta.classList.add('error'); }

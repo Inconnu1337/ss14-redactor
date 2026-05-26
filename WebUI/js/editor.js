@@ -303,6 +303,7 @@ async function copyPrototype(type, sourceId) {
     const clone = JSON.parse(JSON.stringify(src));
     clone.id = _generateUniqueProtoId(type, sourceId);
     fs.yaml.push(clone);
+    fs.doc = null;
     commitChange(fs);
     renderEditor();
     const area = document.querySelector(`.editor-group[data-group-id="${state.activeGroupId}"] .group-content`);
@@ -330,6 +331,7 @@ function addNewPrototype(type) {
     // "+ Add item" on the parent bar which commits an empty slot via
     // `onParentChange` — keeping the add-item codepath intact.
     fs.yaml.push(proto);
+    fs.doc = null;
     commitChange(fs);
     renderEditor();
     const area = document.querySelector(`.editor-group[data-group-id="${state.activeGroupId}"] .group-content`);
@@ -375,6 +377,7 @@ function buildCard(proto, idx, filePath) {
             if (!fs || !fs.yaml[idx]) return;
             if (checked) fs.yaml[idx].abstract = true;
             else delete fs.yaml[idx].abstract;
+            fs.dirtyProtos?.add(idx);
             state.resolvedCache.clear();
             commitChange(fs);
             renderEditor();
@@ -396,6 +399,7 @@ function buildCard(proto, idx, filePath) {
         const fs = state.openFiles.get(filePath);
         if (fs && fs.yaml) {
             fs.yaml.splice(idx, 1);
+            fs.doc = null;
             commitChange(fs);
             renderEditor();
         }
@@ -450,6 +454,7 @@ function buildCard(proto, idx, filePath) {
         if (!fs || !Array.isArray(fs.yaml) || from < 0 || from >= fs.yaml.length) return;
         const [moved] = fs.yaml.splice(from, 1);
         fs.yaml.splice(to, 0, moved);
+        fs.doc = null;
         commitChange(fs);
         renderEditor();
     });
@@ -886,6 +891,7 @@ function setFieldValue(path, tag, value, filePath) {
     for (const key of path) { obj = obj?.[key]; }
     if (!obj) return;
     obj[tag] = value;
+    fs.dirtyProtos?.add(path[0]);
     state.resolvedCache.clear();
     commitChange(fs);
     scheduleRenderEditor();
@@ -898,6 +904,7 @@ function deleteField(path, tag, filePath) {
     for (const key of path) { obj = obj?.[key]; }
     if (!obj) return;
     delete obj[tag];
+    fs.dirtyProtos?.add(path[0]);
     state.resolvedCache.clear();
     commitChange(fs);
     scheduleRenderEditor();
@@ -906,7 +913,16 @@ function deleteField(path, tag, filePath) {
 
 
 function commitChange(fs) {
-    const nc = dumpYaml(fs.yaml);
+    let nc;
+    if (fs.doc && fs.dirtyProtos?.size > 0 &&
+        fs.yaml.length === fs.doc.contents?.items?.length) {
+        nc = dumpYamlRespectful(fs.yaml, fs.doc, fs.content, fs.dirtyProtos);
+    } else {
+        nc = dumpYaml(fs.yaml);
+    }
+    const { doc } = parseYamlDoc(nc);
+    fs.doc = doc;
+    fs.dirtyProtos = new Set();
     state.resolvedCache.clear();
     fs.pushHistory(nc); renderTabs(); scheduleAutosave(fs);
 }
@@ -939,7 +955,10 @@ function scheduleAutosave(fs) {
 function handleUndo() {
     const fs = state.openFiles.get(state.currentFile);
     if (!fs || !fs.undo()) return;
-    fs.yaml = parseYaml(fs.content);
+    const { protos, doc } = parseYamlDoc(fs.content);
+    fs.yaml = protos;
+    fs.doc = doc;
+    fs.dirtyProtos = new Set();
     state.resolvedCache.clear();
     renderEditor(); renderTabs(); scheduleAutosave(fs);
 }
@@ -947,7 +966,10 @@ function handleUndo() {
 function handleRedo() {
     const fs = state.openFiles.get(state.currentFile);
     if (!fs || !fs.redo()) return;
-    fs.yaml = parseYaml(fs.content);
+    const { protos, doc } = parseYamlDoc(fs.content);
+    fs.yaml = protos;
+    fs.doc = doc;
+    fs.dirtyProtos = new Set();
     state.resolvedCache.clear();
     renderEditor(); renderTabs(); scheduleAutosave(fs);
 }

@@ -1,6 +1,6 @@
 ﻿---
-description: "Conventions for the xUnit test project under tests/ss14-editor.Tests/."
-applyTo: "tests/**/*.cs"
+description: "Conventions for the xUnit test project under tests/ss14-editor.Tests/ and the JS test helper under tests/yaml/."
+applyTo: "tests/**"
 ---
 
 # Test Project Rules
@@ -23,6 +23,15 @@ Create a matching `XxxTests.cs` in this folder. The mapping is enforced by the f
 ## Running
 - `& 'C:\Program Files\dotnet\dotnet.exe' test tests\ss14-editor.Tests\ss14-editor.Tests.csproj`
 - Test output is in Russian on this machine (locale issue, cosmetic). Watch for the final summary line: `пройдено N` = passed N.
+
+## WebUI / JavaScript tests
+Pure JS functions in `WebUI/js/` cannot be tested from C#. The pattern is:
+1. Write the assertions in a plain Node.js script under `tests/yaml/` (no npm, uses `yaml-lib.js` bundle + `vm.runInNewContext`).
+2. Add a thin C# `[Fact]` in `YamlJsTests.cs` that shells out to `node <script>` and asserts exit code 0.
+
+This keeps JS test logic in JS while `dotnet test` covers everything automatically.  
+Node.js must be available — CI installs it via `actions/setup-node@v4` (see [tests.yml](../../.github/workflows/tests.yml)).  
+Existing JS test: [tests/yaml/yaml-respectful.test.js](../../tests/yaml/yaml-respectful.test.js) — all comment styles preserved by `dumpYamlRespectful`.
 
 ## What this project does **not** test
 - `MetadataLoadContext`-loaded game assemblies — requires a built SS14 fork. Avoid in unit tests; cover via integration scripts.
