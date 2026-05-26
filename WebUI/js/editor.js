@@ -373,13 +373,9 @@ function buildCard(proto, idx, filePath) {
         const absSource = isAbstract ? 'local' : 'default';
         const absMeta = { fieldKind: 'boolean', tag: 'abstract' };
         const onAbsChange = checked => {
-            const fs = state.openFiles.get(filePath);
-            if (!fs || !fs.yaml[idx]) return;
-            if (checked) fs.yaml[idx].abstract = true;
-            else delete fs.yaml[idx].abstract;
-            fs.dirtyProtos?.add(idx);
+            if (checked) setFieldValue([idx], 'abstract', true, filePath);
+            else deleteField([idx], 'abstract', filePath);
             state.resolvedCache.clear();
-            commitChange(fs);
             renderEditor();
         };
         const onAbsReset = absSource === 'local'
@@ -509,9 +505,7 @@ function buildCard(proto, idx, filePath) {
         if (!fs || !fs.yaml[idx]) return;
         const newId = String(v ?? '').trim();
         if (!newId || newId === fs.yaml[idx].id) return;
-        fs.yaml[idx].id = newId;
-        state.resolvedCache.clear();
-        commitChange(fs);
+        setFieldValue([idx], 'id', newId, filePath);
     };
     body.appendChild(fieldRow('id', idMeta, String(id), 'local', onIdChange, null));
     // 2. Abstract row (only when meta declares the field).
@@ -891,6 +885,7 @@ function setFieldValue(path, tag, value, filePath) {
     for (const key of path) { obj = obj?.[key]; }
     if (!obj) return;
     obj[tag] = value;
+    if (fs.doc) docSetField(fs.doc, path, tag, value);
     fs.dirtyProtos?.add(path[0]);
     state.resolvedCache.clear();
     commitChange(fs);
@@ -904,6 +899,7 @@ function deleteField(path, tag, filePath) {
     for (const key of path) { obj = obj?.[key]; }
     if (!obj) return;
     delete obj[tag];
+    if (fs.doc) docDeleteField(fs.doc, path, tag);
     fs.dirtyProtos?.add(path[0]);
     state.resolvedCache.clear();
     commitChange(fs);

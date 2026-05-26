@@ -176,7 +176,7 @@ function _canonicalizeComponent(comp) {
 // ──────────────────────────────────────────────────────────────────────
 //  Stringify helpers
 // ──────────────────────────────────────────────────────────────────────
-const _DUMP_OPTS = { indent: 2, lineWidth: -1, singleQuote: true };
+const _DUMP_OPTS = { indent: 2, lineWidth: -1, singleQuote: true, indentSeq: false };
 
 function _dumpSingleProto(proto) {
     const doc = new YAML.Document();
@@ -230,8 +230,10 @@ function dumpYamlRespectful(yamlArray, doc, originalText, dirtyIndices) {
         // (blank lines, inter-item comments, leading file comments, etc.)
         parts.push(originalText.slice(pos, itemStart));
         if (dirtyIndices.has(i)) {
-            // _dumpSingleProto returns '- type: ...\n'; the gap has no '- '
-            parts.push(_dumpSingleProto(yamlArray[i]));
+            // Serialize from the (mutated) AST node so internal comments
+            // (commentBefore on child nodes) are preserved even when field
+            // values were changed via docSetField / docDeleteField.
+            parts.push(_dumpSingleProtoFromNode(items[i]));
         } else {
             // Slice from '-' to nodeEnd (inclusive of trailing newline)
             parts.push(originalText.slice(itemStart, nodeEnd));
@@ -241,6 +243,158 @@ function dumpYamlRespectful(yamlArray, doc, originalText, dirtyIndices) {
     // Trailing content after the last item (trailing newline, etc.)
     parts.push(originalText.slice(pos));
     return parts.join('');
+}
+
+/**
+ * Serialize a single proto from its YAML AST node (preserving internal
+ * comments, tags, and structure) as a block-sequence entry ("- type: …").
+ *
+ * The top-level spaceBefore / commentBefore on the node belong to the
+ * inter-proto gap already emitted by dumpYamlRespectful via text-slicing,
+ * so we suppress them here to avoid duplication.
+ */
+function _dumpSingleProtoFromNode(node) {
+    const origSpace   = node.spaceBefore;
+    const origComment = node.commentBefore;
+    node.spaceBefore   = false;
+    node.commentBefore = undefined;
+    try {
+        const tmpDoc = new YAML.Document();
+        const seq = tmpDoc.createNode([]);
+        seq.add(node);
+        tmpDoc.contents = seq;
+        return tmpDoc.toString(_DUMP_OPTS);
+    } finally {
+        node.spaceBefore   = origSpace;
+        node.commentBefore = origComment;
+    }
+}
+
+/**
+ * Recursively patch an existing YAML AST node in-place to match a new JS
+ * value, preserving all commentBefore / comment annotations on child nodes.
+ *
+ * Handles structural mismatches (scalar ↔ map, etc.) by falling back to
+ * full replacement for that subtree only.
+ */
+// Returns the expected YAML tag string for a JS value, or undefined.
+function _expectedTag(jsVal) {
+    return jsVal?.__yamlTag ? '!type:' + jsVal.__yamlTag : undefined;
+}
+
+/**
+ * Recursively patch an existing YAML AST node in-place to match a new JS
+ * value, preserving all commentBefore / comment annotations on child nodes.
+ *
+ * Callers MUST ensure the YAML tag of `astNode` already matches the new
+ * value before calling (see docSetField / the Map/Seq branches below).
+ * This function never modifies a node's tag — type changes always fall
+ * back to full _jsToNode replacement so the tag is set correctly.
+ */
+function _patchAstNode(astNode, jsValue, doc) {
+    if (YAML.isScalar(astNode)) {
+        astNode.value = jsValue;
+        return;
+    }
+
+    if (YAML.isMap(astNode) && jsValue !== null && typeof jsValue === 'object' && !Array.isArray(jsValue)) {
+        const jsKeys = Object.keys(jsValue).filter(k => !k.startsWith('__'));
+        const jsKeySet = new Set(jsKeys);
+
+        // Delete keys absent from the new value.
+        const existingKeys = astNode.items.map(p => p.key?.value).filter(k => typeof k === 'string');
+        for (const k of existingKeys) {
+            if (!jsKeySet.has(k)) astNode.delete(k);
+        }
+
+        for (const k of jsKeys) {
+            const childNode = astNode.get(k, true); // keepScalar → raw AST node
+            const jsVal = jsValue[k];
+            const jsIsObj = jsVal !== null && typeof jsVal === 'object' && !Array.isArray(jsVal);
+            const jsIsArr = Array.isArray(jsVal);
+            if (childNode !== undefined) {
+                if (YAML.isScalar(childNode) && !jsIsObj && !jsIsArr) { childNode.value = jsVal; continue; }
+                // For Map children, only patch in-place when the YAML tag matches;
+                // a tag change means a type change → full replacement preserves correctness.
+                if (YAML.isMap(childNode) && jsIsObj && childNode.tag === _expectedTag(jsVal)) {
+                    _patchAstNode(childNode, jsVal, doc); continue;
+                }
+                if (YAML.isSeq(childNode) && jsIsArr) { _patchAstNode(childNode, jsVal, doc); continue; }
+            }
+            // Missing key, structural mismatch, or YAML-tag mismatch: full replacement.
+            astNode.set(k, _jsToNode(jsVal, doc));
+        }
+        return;
+    }
+
+    if (YAML.isSeq(astNode) && Array.isArray(jsValue)) {
+        const minLen = Math.min(astNode.items.length, jsValue.length);
+        for (let i = 0; i < minLen; i++) {
+            const item   = astNode.items[i];
+            const jsItem = jsValue[i];
+            const jsIsObj = jsItem !== null && typeof jsItem === 'object' && !Array.isArray(jsItem);
+            const jsIsArr = Array.isArray(jsItem);
+            if (YAML.isScalar(item) && !jsIsObj && !jsIsArr) { item.value = jsItem; continue; }
+            if (YAML.isMap(item) && jsIsObj && item.tag === _expectedTag(jsItem)) {
+                _patchAstNode(item, jsItem, doc); continue;
+            }
+            if (YAML.isSeq(item) && jsIsArr) { _patchAstNode(item, jsItem, doc); continue; }
+            astNode.items[i] = _jsToNode(jsItem, doc);
+        }
+        for (let i = minLen; i < jsValue.length; i++) astNode.add(_jsToNode(jsValue[i], doc));
+        astNode.items.splice(jsValue.length);
+        return;
+    }
+    // Alias / unhandled node type: no-op.
+}
+
+/**
+ * Apply a field-set mutation to the YAML AST document so that internal
+ * comments are preserved when dumpYamlRespectful re-serializes the proto.
+ * path follows the same convention as setFieldValue (starts with protoIdx).
+ *
+ * For complex (object / array) values the existing AST subtree is patched
+ * in-place via _patchAstNode, which preserves all commentBefore / comment
+ * annotations on child nodes even when deeply nested values change.
+ *
+ * Returns false on failure (commitChange falls back to dumpYaml).
+ */
+function docSetField(doc, path, tag, value) {
+    if (!doc || !YAML.isDocument(doc)) return false;
+    try {
+        if (value !== null && typeof value === 'object') {
+            const existingNode = doc.getIn([...path, tag], true);
+            // For Seq values, always patch in-place (sequences carry no !type: tag).
+            if (YAML.isSeq(existingNode) && Array.isArray(value)) {
+                _patchAstNode(existingNode, value, doc);
+                return true;
+            }
+            // For Map values, only patch in-place when the YAML tag matches;
+            // a type change must go through _jsToNode so the tag is written correctly.
+            if (YAML.isMap(existingNode) && !Array.isArray(value) &&
+                existingNode.tag === _expectedTag(value)) {
+                _patchAstNode(existingNode, value, doc);
+                return true;
+            }
+        }
+        doc.setIn([...path, tag], _jsToNode(value, doc));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Apply a field-delete mutation to the YAML AST document.
+ */
+function docDeleteField(doc, path, tag) {
+    if (!doc || !YAML.isDocument(doc)) return false;
+    try {
+        doc.deleteIn([...path, tag]);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
